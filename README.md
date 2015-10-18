@@ -38,3 +38,49 @@ git init
 git add .
 git commit -m "Initial commit"
 ```
+
+## The `Idea` Model
+
+The foundation of our Idea Box is the `Idea` model. So, let's go ahead and create one of those.
+
+```shell
+rails generate model idea title:string body:text quality:integer
+```
+
+The next step is to migrate the database with `rake db:create db:migrate`. (Keep in mind, you might already have a database with the same name if you've done this project before. Forewarned is forearmed.)
+
+The specification says that, by default, all ideas start out at the lowest quality rating. Right now, `quality` is just an integer, so let's awesome that `0` represents the lowest possible quality.
+
+Step one is to ourselves a nice little test in `test/models/idea_test.rb`. Let's replace the automatically generated—yet commented out—test with our own.
+
+```rb
+test "should have a quality that defaults to 0" do
+  idea = Idea.new
+  assert_equal(0, idea.quality)
+end
+```
+
+That test should fail. Let's go ahead and make it pass. First, we'll generate a migration where we set a default value of `0` for the `quality` column in our database.
+
+```shell
+rails g migration AddDefaultToIdeaQuality
+```
+
+In the migration file you just generated, we'll add the following:
+
+```rb
+class AddDefaultToIdeaQuality < ActiveRecord::Migration
+  def change
+    change_column :ideas, :quality, :integer, default: 0
+  end
+end
+```
+
+Finally, we'll run `rake db:migrate` to run the migration we just set up. Let's run our tests with `rake` and verify that everything is passing. If it is, then we're ready to move on.
+
+It's about that time again to make a commit.
+
+```shell
+git add app/models/idea.rb db/migrate/ db/schema.rb test/models/idea_test.rb
+git commit -m "Generate idea model; default quality to zero"
+```
