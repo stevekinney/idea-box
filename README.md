@@ -84,3 +84,64 @@ It's about that time again to make a commit.
 git add app/models/idea.rb db/migrate/ db/schema.rb test/models/idea_test.rb
 git commit -m "Generate idea model; default quality to zero"
 ```
+
+### Quality Control
+
+Some people love [`enums`][enums] and [some people][sean] hate them. We're going to use them for the sake of exposing you to them. You could just stick with using an interger to represent the quality of the idea. You could also just store the name of the value as a string if that's your sort of thing.
+
+[enums]: http://edgeapi.rubyonrails.org/classes/ActiveRecord/Enum.html
+[sean]: https://github.com/sgrif
+
+To get started with `enums`, let's add the following to `app/models/idea.rb`:
+
+```rb
+class Idea < ActiveRecord::Base
+  enum quality: [:swill, :plausible, :genius]
+end
+```
+
+One nice thing about using `enums` is that we're implicitly creating a validation that the quality property will always be either "swill", "plausible", or "genius". We also got some nifty scopes for free. We can call `Idea.swill` or `Idea.plausible` and we'll receive the ideas of that quality.
+
+Just for kicks, let's go ahead and run our test suite using `rake`.
+
+Everything is gr—oh no, it looks like we have a failure on our hands. We changed the way that quality works. Our test is asserting that `quality` is `0`, but that's no longer the case. Adding the `enum` method has changed the way that `quality` works. `idea.quality` is now `"swill"`.
+
+Let's update our test in `test/models/idea.rb` accordingly:
+
+```rb
+test "should have a quality that defaults to 0" do
+  idea = Idea.new
+  assert_equal("swill", idea.quality)
+end
+```
+
+### Adding Validations
+
+It's not in the project specification per se, but let's validate that each idea has at least a title. I don't really care to elaborate on all of my ideas with a `body`, but I'd at least like to have some kind of sense what my great idea was all about. You've probably done this a thousand times before, but that doesn't mean I'm going to throw caution to the wind, let's start with a test in `test/models/idea.rb`.
+
+```rb
+test "it should be invalid without a title" do
+  idea_without_title = Idea.new
+  idea_with_title = Idea.new(title: "My greatest idea")
+
+  refute(idea_without_title.valid?)
+  assert(idea_with_title.valid?)
+end
+```
+
+Getting the test to pass is pretty trivial.
+
+```rb
+class Idea < ActiveRecord::Base
+  validates :title, presence: true
+
+  enum quality: [:swill, :plausible, :genius]
+end
+```
+
+And, that should do it. It sounds like a good time for another commit.
+
+```shell
+git add app/models/idea.rb test/models/idea_test.rb
+git commit -am "Add enum and validations"
+```
