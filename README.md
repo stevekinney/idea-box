@@ -145,3 +145,74 @@ And, that should do it. It sounds like a good time for another commit.
 git add app/models/idea.rb test/models/idea_test.rb
 git commit -am "Add enum and validations"
 ```
+
+## Setting Up Our Controller
+
+Now that we have our model, it's time for us to expose an API that allows the user to retrieve, update, and delete some ideas. We'll start by generating a namespaced controller.
+
+```shell
+rails generate controller api/v1/ideas
+```
+
+A whole bunch of files were created on our behalf. We won't use a lot of these and it might have been a good idea to use Rails API instead of vanilla Rails, but that ship has sailed. Let's at least get rid of the obvious cruft.
+
+```shell
+rm -r app/assets/javascripts/api app/assets/stylesheets/api
+```
+
+So, now it's time to write a test to make sure that our API endpoint works (hint: it doesn't). We'll start by writing a test that we can hit it with JSON in `test/controllers/api/v1/ideas_controllers/test.rb`.
+
+```rb
+test "controller responds to json" do
+  get :index, format: :json
+  assert_response :success
+end
+```
+
+If we go ahead and run our test, we'll see that it errors out because there is no route setup for that endpoint. Silly us. Let's go add it to our `routes.rb` file.
+
+```rb
+Rails.application.routes.draw do
+
+  namespace :api do
+    namespace :v1 do
+      resources :ideas
+    end
+  end
+
+end
+```
+
+Our next error states that there is no `index` action. This also makes sense, since we haven't set one up. We can address that in `app/controllers/api/v1/ideas_controller.rb`.
+
+```rb
+class Api::V1::IdeasController < ApplicationController
+
+  def index
+  end
+
+end
+```
+
+Run and tests and—ugh, now it's complaining that there is no template. But we don't need a template, we're responding with JSON, right?
+
+We'll need to add the `responders` gem to our `Gemfile` and `bundle`
+
+```rb
+gem 'responders'
+```
+
+We'll also need to update our controller as follows:
+
+```rb
+class Api::V1::IdeasController < ApplicationController
+  respond_to :json
+
+  def index
+    respond_with Idea.all
+  end
+
+end
+```
+
+
