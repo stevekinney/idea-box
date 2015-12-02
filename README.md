@@ -542,3 +542,5 @@ end
 Oh boy or girl! Controller raises an `ArgumentError` and blows up. Enum properties get very angry when you assign an invalid attribute. Passing in a valid attribute is considered a application level error in Rails. So, it's on us to figure out a way to refactor this controller to get this test to pass.
 
 **Full Disclosure**: You author now wishes he didn't use enums. If we had chosen to just use a string field with a default value, we could roughly the same interface. If we want to make an invalid enum not blow up, we're going to have to hack together a lot of logic in our controller. One of the things I'd love for you all to get out of Module 4 is to listen to that little voice in your head about not going down a bad path. That voice is ringing loud and clear in my head. So, I'm going to listen to it.
+
+Let's stop what we're doing and make a commit.
