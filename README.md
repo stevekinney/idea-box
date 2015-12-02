@@ -653,4 +653,35 @@ def destroy
 end
 ```
 
-Run the tests and we should have 24 passing tests. And with that our API is complete.
+Run the tests and we should have 24 passing tests. And with that our API is complete. Along the way, we've tested the unhappy path, learned the implications of some poor design decisions, and rethought our approach. We're now ready to talk the client side of our application.
+
+## The Client Side
+
+Because we have some solid tests on our API, we can be relatively confident about what we're going to get from Rails at any given moment.
+
+### The Basic Page
+
+We'll be doing most of our interactions with JavaScript, but we still want to send over a simple view that will load and run our client-side code. Let's start with an integration test to make sure we can load at a view at our application root and verify that it has the elements we're expecting.
+
+```
+rails g integration_test basic_template
+```
+
+This will generate a `test/integration/basic_template_test.rb` for us.
+
+```rb
+require 'test_helper'
+
+class BasicTemplateTest < ActionDispatch::IntegrationTest
+
+  test "it loads a page at the application root" do
+    get "/"
+    assert_response :success
+  end
+
+end
+```
+
+Run your tests using `rake` and watch your new test fail.
+
+
