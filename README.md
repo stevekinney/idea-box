@@ -117,23 +117,39 @@ end
 
 ### Adding Validations
 
-It's not in the project specification per se, but let's validate that each idea has at least a title. I don't really care to elaborate on all of my ideas with a `body`, but I'd at least like to have some kind of sense what my great idea was all about. You've probably done this a thousand times before, but that doesn't mean I'm going to throw caution to the wind, let's start with a test in `test/models/idea.rb`.
+It's not in the project specification per se, but let's validate that each idea has at least a title. I don't really care to elaborate on all of my ideas with a `body`, but I'd at least like to have some kind of sense what my great idea was all about. You've probably done this a thousand times before, but that doesn't mean I'm going to throw caution to the wind, let's start with a few tests in `test/models/idea.rb`.
 
 ```rb
-test "it should be invalid without a title" do
-  idea_without_title = Idea.new
-  idea_with_title = Idea.new(title: "My greatest idea")
+test "it should be invalid without a title or body" do
+  idea_without_title_or_body = Idea.new
 
-  refute(idea_without_title.valid?)
-  assert(idea_with_title.valid?)
+  refute(idea_without_title_or_body.valid?)
+end
+
+test "it should be invalid without a title" do
+  idea = Idea.new(body: "body")
+
+  refute(idea.valid?)
+end
+
+test "it should be invalid without a body" do
+  idea = Idea.new(title: "title")
+
+  refute(idea.valid?)
+end
+
+test "it is valid with a title and body" do
+  idea_with_title_and_body = Idea.new(title: "title", body: "body")
+
+  assert(idea_with_title_and_body.valid?)
 end
 ```
 
-Getting the test to pass is pretty trivial.
+Getting these tests to pass is pretty trivial.
 
 ```rb
 class Idea < ActiveRecord::Base
-  validates :title, presence: true
+  validates :title, :body, presence: true
 
   enum quality: [:swill, :plausible, :genius]
 end
@@ -256,6 +272,7 @@ Let's start by writing a test to see if we're getting back an array from the con
 ```rb
 test 'index returns an array of records' do
   get :index, format: :json
+
   assert_kind_of Array, response.body
 end
 ```
@@ -266,6 +283,7 @@ If we run our test, we'll see that it fails. This initially might be a little su
 test 'index returns an array of records' do
   get :index, format: :json
   json_response = JSON.parse(response.body)
+
   assert_kind_of Array, json_response
 end
 ```
@@ -289,8 +307,152 @@ We can now use this method in `test/controllers/api/v1/ideas_controller_test.rb`
 ```rb
 test 'index returns an array of records' do
   get :index, format: :json
+
   assert_kind_of Array, json_response
 end
 ```
 
+Run the test suite and verify that you have no new errors. Let's commit our changes and get ready to move on.
 
+### Testing the Contents of Our Response
+
+So, we know we have an array, but we probably want to test that this array has what we think it has in it. When we're using fixtures, they're given random `id` attributes, but we can grab a given fixture using the key defined in `test/fixtures/ideas.yml`.
+
+For example, `ideas(:one)` will get us the fixture with the key of `one` in `test/fixtures/ideas.yml`.
+
+As mentioned earlier, we want to verify that if we have two ideas in our database, we're getting two ideas out through our API and they are the ideas we think they are.
+
+```rb
+test '#index returns the correct number of ideas' do
+  get :index, format: :json
+
+  assert_equal Idea.count, json_response.count
+end
+```
+
+Notice that I used `Idea.count` instead of 2. You and I both know there are two fixtures. But that's not totally clear to someone just reading our test suite. It's not clear to the reader why we are asserting the number 2. This is known as the [mystery guest pattern][] and we'd ideally like to avoid it, if at all possible. We've also gained the added benefit of being able to add and remove fixtures to our heart's content without messing up our tests.
+
+[mystery guest pattern]: https://robots.thoughtbot.com/mystery-guest
+
+We also want to make sure that we have well-formed ideas in our response. The order of our fixtures is not guaranteed and it's frankly not worth pinning down all of the small changes that occur between converting our ActiveRecord model into a simpler data structure (a hash), serializing it into a string, sending it out over the wire, and converting it back into a data structure. But, it is super important that each of the ideas we get from our API have a `title`, `body`, and `quality` property.
+
+Let's go ahead and test that we have this properties:
+
+```rb
+test '#index contains ideas with the correct properties' do
+  get :index, format: :json
+
+  json_response.each do |idea|
+    assert idea["title"]
+    assert idea["body"]
+    assert idea["quality"]
+  end
+end
+```
+
+It's about time for another commit, I think.
+
+### Getting a Specific Idea
+
+Okay, we can get all of the ideas, but what about getting just one idea in particular? Let's start with a test that verifies that we even have that endpoint.
+
+```rb
+test "controller responds to json" do
+  id = ideas(:one).id
+
+  get :show, id: id, format: :json
+  assert_response :success
+end
+```
+
+Ugh, we don't have that action available. So, let's go ahead and take care of that. I know it's not true TDD, but we'll also have it respond with the `Idea` in question so we don't have to go back and do this again. In `app/controllers/api/v1/ideas_controller.rb`, add the following method:
+
+```rb
+def show
+  respond_with Idea.find(params[:id])
+end
+```
+
+Run your tests and again and verify that it passes.
+
+That's cool and all, but we also want to make sure it responds with the correct idea. Let's write a test for that.
+
+```rb
+test "#show responds with a particular idea" do
+  id = ideas(:one).id
+
+  get :show, id: id, format: :json
+
+  assert_equal id, json_response["id"]
+end
+```
+
+This test should pass out of the box. That's one of the fun advantages of using a framework. It does mostly the write thing in your behalf.
+
+### Creating New Ideas
+
+We can get all of the ideas in our fixtures. We can get a particular idea in our fixtures. What we can't do—yet—is create a new idea. Let's start with a test.
+
+```rb
+test '#create adds an additional idea to to the database' do
+  idea = { title: 'New Idea', body: 'Something' }
+  number_of_ideas = Idea.all.count
+
+  post :create, idea: idea, format: :json
+
+  assert_equal number_of_ideas + 1, Idea.all.count
+end
+```
+
+To no one's surprise, this test fails because we don't have that action in our controller. Let's head over to `app/controllers/api/v1/ideas_controller.rb` and add it. We'll need to do two things. Set up a private method that appease built-in security featrues in Rails.
+
+```rb
+def idea_params
+  params.require(:idea).permit(:body, :title)
+end
+```
+
+Then, we can set up our controller.
+
+```rb
+def create
+  idea = Idea.new(idea_params)
+  if idea.save
+    respond_with({ idea: idea }, status: 201, location: api_v1_idea_path(idea))
+  else
+    respond_with({ errors: idea.errors }, status: 422, location: api_v1_ideas_path)
+  end
+end
+```
+
+What's happening here? We're creating a new `Idea` and then attempting to send it. If that works, we'll send the user a response with a 201 ("Created") status code from the location of that new resource. If it fails, then we'll send them a 422 ("Unprocessble Entity") status code and some information about what went wrong.
+
+If we run our tests, they should pass at this point.
+
+### The Unhappier Side of Creating Ideas
+
+So, what happens if we send some bad data to our server? We probably want to make sure we're getting some helpful error messages and the appropriate status codes, right?
+
+```rb
+test "#create rejects ideas without a title" do
+  idea = { body: 'Something' }
+  number_of_ideas = Idea.all.count
+
+  post :create, idea: idea, format: :json
+
+  assert_response 422
+  assert_includes json_response["errors"]["title"], "can't be blank"
+end
+
+test "#create rejects ideas without a body" do
+  idea = { title: 'New Idea' }
+  number_of_ideas = Idea.all.count
+
+  post :create, idea: idea, format: :json
+
+  assert_response 422
+  assert_includes json_response["errors"]["body"], "can't be blank"
+end
+```
+
+These should all pass, which makes this a good time for a commit.

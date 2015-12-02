@@ -1,5 +1,5 @@
 class Idea < ActiveRecord::Base
-  validates :title, presence: true
+  validates :title, :body, presence: true
 
   enum quality: [:swill, :plausible, :genius]
 end
