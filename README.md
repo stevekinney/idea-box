@@ -430,7 +430,7 @@ def create
   if idea.save
     respond_with(idea, status: 201, location: api_v1_idea_path(idea))
   else
-    respond_with({ errors: idea.errors }, status: 422, location: api_v1_ideas_path)
+    render json: { errors: idea.errors }, status: 422, location: api_v1_ideas_path
   end
 end
 ```
@@ -477,7 +477,7 @@ def update
   if idea.update(idea_params)
     respond_with(idea, status: 200, location: api_v1_idea_path(idea))
   else
-    respond_with({ errors: idea.errors }, status: 422, location: api_v1_ideas_path)
+    render json: idea.errors, status: 422
   end
 end
 ```
@@ -544,3 +544,93 @@ Oh boy or girl! Controller raises an `ArgumentError` and blows up. Enum properti
 **Full Disclosure**: You author now wishes he didn't use enums. If we had chosen to just use a string field with a default value, we could roughly the same interface. If we want to make an invalid enum not blow up, we're going to have to hack together a lot of logic in our controller. One of the things I'd love for you all to get out of Module 4 is to listen to that little voice in your head about not going down a bad path. That voice is ringing loud and clear in my head. So, I'm going to listen to it.
 
 Let's stop what we're doing and make a commit.
+
+### The Rescue Mission
+
+Let's create a new branch for the purposes of conducting our rescue mission.
+
+```
+git checkout -b the-rescue-mission
+```
+
+Next, let's generate a migration.
+
+```
+rails g migration ChangeIdeaQualityFromIntegerToString
+```
+
+We'll run the migration.
+
+```
+rake db:migrate
+```
+
+Let's update our fixtures to use our new strings instead of integrers in `test/fixtures/ideas.yml`.
+
+```yaml
+one:
+  title: First Idea
+  body: Create world peace
+  quality: genius
+
+two:
+  title: Second Idea
+  body: Buy more potato chips
+  quality: swill
+```
+
+Now, let's run the test suite and watch Rome burn. We should have five failures.
+
+We know we're going to need to replace that enum method in our model. Let's start by getting rid of it. Your `app/models/idea.rb` should now look like this.
+
+```rb
+class Idea < ActiveRecord::Base
+  validates :title, :body, presence: true
+end
+```
+
+
+Run your tests.
+
+That got us down to one failure. Even better is that was the same test that was failing before we started this mission. The issue is a little different. Before our application was blowing up. Now, we're just returning a 204 instead of telling the user they passed us an invalid attribute.
+
+This is because we don't have an enum anymore, just a regular old string column. We'll take literally any kind of string. Let's add some validations to our model to shore things up a bit. We'll start with some tests in `test/models/idea_test.rb`.
+
+```rb
+test "it is valid with a quality of swill" do
+  ideas(:one).quality = "swill"
+
+  assert(ideas(:one).valid?)
+end
+
+test "it is valid with a quality of plausible" do
+  ideas(:one).quality = "plausible"
+
+  assert(ideas(:one).valid?)
+end
+
+test "it is valid with a quality of genius" do
+  ideas(:one).quality = "genius"
+
+  assert(ideas(:one).valid?)
+end
+
+test "it is invalid with any other quality" do
+  ideas(:one).quality = "invalid"
+
+  refute(ideas(:one).valid?)
+end
+```
+
+To get these new model validation tests to pass, we'll need to add one additional validation to `app/models/idea.rb`.
+
+```rb
+class Idea < ActiveRecord::Base
+  validates :title, :body, presence: true
+  validates :quality, inclusion: { in: %w(swill plausible genius) }
+end
+```
+
+Let's run our tests. They should pass. We avoided writing some hacky code to dance around some of limitations of enums by rethinking our design and listening to our gut. Commit these changes and let's merge our `the-rescue-mission` branch back into `master`.
+
+
