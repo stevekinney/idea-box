@@ -215,4 +215,82 @@ class Api::V1::IdeasController < ApplicationController
 end
 ```
 
+Let's take one more stab at running our tests—and we're green! Let's go ahead and make another commit.
+
+## Testing Our Controller Actions
+
+**Nota bene**: If you don't like fixtures and prefer something like [factory_girl][fg], then you're welcome to use those instead.
+
+[fg]: https://github.com/thoughtbot/factory_girl_rails
+
+All of our interactions with the server are going to be through our API. So, it makes sense to get it fully in place. So far, we've stayed pretty vanilla with all of our tools. Let's continue down that road and take a look at using Rails fixtures. When we generated our `Idea` model, Rails went ahead and created `test/fixtures/ideas.yml`.
+
+Let's customize our fixtures a bit to suit the needs of our application:
+
+```yaml
+one:
+  title: First Idea
+  body: Create world peace
+  quality: 2
+
+two:
+  title: Second Idea
+  body: Buy more potato chips
+  quality: 0
+```
+
+These two fixtures will be seeded to our database by default whenever we run our test suite.
+
+### Testing the Index Action
+
+Now, if we have two ideas in our database, we can make some assumptions about what ought to happen when we hit the `index` action on our controller.
+
+- We should get back a JSON response that contains an array
+- That array should contain two ideas
+- The first idea should have the title "First Idea"
+
+You could certainly add a few more items to that list, but that's enough to get us to the level of confidence where we can be pretty certain that our `index` action is working as it should.
+
+Let's start by writing a test to see if we're getting back an array from the controller.
+
+```rb
+test 'index returns an array of records' do
+  get :index, format: :json
+  assert_kind_of Array, response.body
+end
+```
+
+If we run our test, we'll see that it fails. This initially might be a little surprising given that it looks kind of like an array if you squnit at the failure message. But, if you remember, we can only send strings over HTTP. We'll need to parse the string using `JSON.parse`. Let's update our test accordingly.
+
+```rb
+test 'index returns an array of records' do
+  get :index, format: :json
+  json_response = JSON.parse(response.body)
+  assert_kind_of Array, json_response
+end
+```
+
+Run our tests again and watch it pass.
+
+### DRYing Up Our Tests
+
+All of our responses from the server are going to be strings that we're going to have to parse to JSON. It would be super helpful if we didn't have to do it by hand every time we wrote a new test, right? Let's reopen `ActionController::TestCase` and add a method that give us back the parsed response in `test/test_helper.rb`. *Please note*, this is in addition to what is already in this file.
+
+```rb
+class ActionController::TestCase
+  def json_response
+    JSON.parse response.body
+  end
+end
+```
+
+We can now use this method in `test/controllers/api/v1/ideas_controller_test.rb`. Let's refactor our test as follows:
+
+```rb
+test 'index returns an array of records' do
+  get :index, format: :json
+  assert_kind_of Array, json_response
+end
+```
+
 

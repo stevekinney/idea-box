@@ -1,0 +1,11 @@
+# Read about fixtures at http://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  title: First Idea
+  body: Create world peace
+  quality: 2
+
+two:
+  title: Second Idea
+  body: Buy more potato chips
+  quality: 0
