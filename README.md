@@ -721,8 +721,14 @@ I know I'm going to want a few things on my page:
 - A `<div>` with the class of `ideas` for rendering my ideas into.
 - A form for creating new ideas.
 
+In order to verify that things are actually on the page, we're going to have to bring in our furry little friend, Capybara. We'll add the following to gems to the development/test section of our `Gemfile`.
 
+```rb
+group :development, :test do
+  gem 'pry-rails' # This was already here.
+  gem 'capybara'
+  gem 'launchy'
+end
+```
 
-
-
-
+Go ahead and `bundle`. I'll wait.
