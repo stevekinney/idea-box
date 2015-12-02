@@ -12,7 +12,16 @@ class Api::V1::IdeasController < ApplicationController
   def create
     idea = Idea.new(idea_params)
     if idea.save
-      respond_with({ idea: idea }, status: 201, location: api_v1_idea_path(idea))
+      respond_with(idea, status: 201, location: api_v1_idea_path(idea))
+    else
+      respond_with({ errors: idea.errors }, status: 422, location: api_v1_ideas_path)
+    end
+  end
+
+  def update
+    idea = Idea.find(params[:id])
+    if idea.update_attributes(idea_params)
+      respond_with(idea, status: 200, location: api_v1_idea_path(idea))
     else
       respond_with({ errors: idea.errors }, status: 422, location: api_v1_ideas_path)
     end
@@ -21,7 +30,7 @@ class Api::V1::IdeasController < ApplicationController
   private
 
   def idea_params
-    params.require(:idea).permit(:body, :title)
+    params.require(:idea).permit(:body, :title, :quality)
   end
 
 end

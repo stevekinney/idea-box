@@ -391,16 +391,26 @@ This test should pass out of the box. That's one of the fun advantages of using 
 
 ### Creating New Ideas
 
-We can get all of the ideas in our fixtures. We can get a particular idea in our fixtures. What we can't do—yet—is create a new idea. Let's start with a test.
+We can get all of the ideas in our fixtures. We can get a particular idea in our fixtures. What we can't do—yet—is create a new idea. Let's start with a pair of tests.
 
 ```rb
-test '#create adds an additional idea to to the database' do
-  idea = { title: 'New Idea', body: 'Something' }
+test "#create adds an additional idea to to the database" do
+  idea = { title: "New Idea", body: "Something" }
   number_of_ideas = Idea.all.count
 
   post :create, idea: idea, format: :json
 
   assert_equal number_of_ideas + 1, Idea.all.count
+end
+
+test "#create returns the new idea" do
+  idea = { title: "New Idea", body: "Something" }
+
+  post :create, idea: idea, format: :json
+
+  assert_equal idea[:title], json_response["title"]
+  assert_equal idea[:body], json_response["body"]
+  assert_equal "swill", json_response["quality"]
 end
 ```
 
@@ -418,7 +428,7 @@ Then, we can set up our controller.
 def create
   idea = Idea.new(idea_params)
   if idea.save
-    respond_with({ idea: idea }, status: 201, location: api_v1_idea_path(idea))
+    respond_with(idea, status: 201, location: api_v1_idea_path(idea))
   else
     respond_with({ errors: idea.errors }, status: 422, location: api_v1_ideas_path)
   end
@@ -456,3 +466,79 @@ end
 ```
 
 These should all pass, which makes this a good time for a commit.
+
+### Updating Ideas
+
+Alright, let's cut to the chase an implement a basic `update` action and then we'll write some tests to verify that it works the way we want it to. (I'm getting a bit tired at acting surprised when a test doesn't pass on a controller action I haven't defined.) In `app/controllers/api/v1/ideas_controller.rb`:
+
+```rb
+def update
+  idea = Idea.find(params[:id])
+  if idea.update(idea_params)
+    respond_with(idea, status: 200, location: api_v1_idea_path(idea))
+  else
+    respond_with({ errors: idea.errors }, status: 422, location: api_v1_ideas_path)
+  end
+end
+```
+
+It's backwards day, so we'll write a test after the fact:
+
+```rb
+test "#update an idea through the API" do
+  updated_content = { title: "Updated Idea" }
+
+  put :update, id: ideas(:one), idea: updated_content, format: :json
+  ideas(:one).reload
+
+  assert_equal "Updated Idea", ideas(:one).title
+end
+```
+
+This is pretty similar to the `create` method with the exception that we need to reload the idea in order to get the updated information. This a good time to commit your changes.
+
+### Changing the Quality of an Idea
+
+We'll also need to promote and demote the quality of an idea. It's easier to worry about the logistics on the client and just send whatever want the new status to be to the server to save. Let's write a test to try this out.
+
+```rb
+test "#update the quality of an idea" do
+  updated_content = { quality: "plausible" }
+
+  put :update, id: ideas(:one), idea: updated_content, format: :json
+  ideas(:one).reload
+
+  assert_equal "plausible", ideas(:one).quality
+end
+```
+
+Go ahead and run the test.
+
+I'll wait.
+
+It fails! Why? Because quality is not listed in `ideas_params` and Rails will not allow it. Let's add it to our strong parameters in `app/controllers/api/v1/ideas_controller.rb`.
+
+```rb
+def idea_params
+  params.require(:idea).permit(:body, :title, :quality)
+end
+```
+
+### The Unhappy Path and Enum Edge Cases
+
+We should test the unhappy path as well. What happens if we send along an invalid quality?
+
+```rb
+test "#update rejects invalid quality values" do
+  updated_content = { quality: "invalid" }
+
+  put :update, id: ideas(:one), idea: updated_content, format: :json
+  ideas(:one).reload
+
+  assert_response 422
+end
+```
+
+Oh boy or girl! Controller raises an `ArgumentError` and blows up. Enum properties get very angry when you assign an invalid attribute. Passing in a valid attribute is considered a application level error in Rails. So, it's on us to figure out a way to refactor this controller to get this test to pass.
+
+**Full Disclosure**: You author now wishes he didn't use enums. If we had chosen to just use a string field with a default value, we could roughly the same interface. If we want to make an invalid enum not blow up, we're going to have to hack together a lot of logic in our controller. One of the things I'd love for you all to get out of Module 4 is to listen to that little voice in your head about not going down a bad path. That voice is ringing loud and clear in my head. So, I'm going to listen to it.
