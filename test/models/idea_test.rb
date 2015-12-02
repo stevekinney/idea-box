@@ -31,4 +31,28 @@ class IdeaTest < ActiveSupport::TestCase
     assert(idea_with_title_and_body.valid?)
   end
 
+  test "it is valid with a quality of swill" do
+    ideas(:one).quality = "swill"
+
+    assert(ideas(:one).valid?)
+  end
+
+  test "it is valid with a quality of plausible" do
+    ideas(:one).quality = "plausible"
+
+    assert(ideas(:one).valid?)
+  end
+
+  test "it is valid with a quality of genius" do
+    ideas(:one).quality = "genius"
+
+    assert(ideas(:one).valid?)
+  end
+
+  test "it is invalid with any other quality" do
+    ideas(:one).quality = "invalid"
+
+    refute(ideas(:one).valid?)
+  end
+
 end
