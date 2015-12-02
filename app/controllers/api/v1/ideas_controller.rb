@@ -27,6 +27,11 @@ class Api::V1::IdeasController < ApplicationController
     end
   end
 
+  def destroy
+    Idea.find(params[:id]).destroy
+    head :no_content
+  end
+
   private
 
   def idea_params

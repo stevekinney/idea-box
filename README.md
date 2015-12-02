@@ -395,12 +395,11 @@ We can get all of the ideas in our fixtures. We can get a particular idea in our
 
 ```rb
 test "#create adds an additional idea to to the database" do
-  idea = { title: "New Idea", body: "Something" }
-  number_of_ideas = Idea.all.count
+  assert_difference 'Idea.count', 1 do
+    idea = { title: "New Idea", body: "Something" }
 
-  post :create, idea: idea, format: :json
-
-  assert_equal number_of_ideas + 1, Idea.all.count
+    post :create, idea: idea, format: :json
+  end
 end
 
 test "#create returns the new idea" do
@@ -633,4 +632,25 @@ end
 
 Let's run our tests. They should pass. We avoided writing some hacky code to dance around some of limitations of enums by rethinking our design and listening to our gut. Commit these changes and let's merge our `the-rescue-mission` branch back into `master`.
 
+### Deleting an Idea
 
+Some ideas need to die. Let's write a test for deleting an idea.
+
+```js
+test "#destroy removes an idea" do
+  assert_difference 'Idea.count', -1 do
+    delete :destroy, idea: ideas(:one), format: :json
+  end
+end
+```
+
+Let's run the test. To our shock and surprise, it errors out because we don't have that action. We'll add it and try out an implementation in an attempt to avoid the "Missing Template" dance in `app/controllers/api/v1/idea_controllers.rb`.
+
+```rb
+def destroy
+  Idea.find(params[:id]).destroy
+  head :no_content
+end
+```
+
+Run the tests and we should have 24 passing tests. And with that our API is complete.

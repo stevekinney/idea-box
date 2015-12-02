@@ -44,12 +44,11 @@ class Api::V1::IdeasControllerTest < ActionController::TestCase
   end
 
   test "#create adds an additional idea to to the database" do
-    idea = { title: "New Idea", body: "Something" }
-    number_of_ideas = Idea.all.count
+    assert_difference 'Idea.count', 1 do
+      idea = { title: "New Idea", body: "Something" }
 
-    post :create, idea: idea, format: :json
-
-    assert_equal number_of_ideas + 1, Idea.all.count
+      post :create, idea: idea, format: :json
+    end
   end
 
   test "#create returns the new idea" do
@@ -115,6 +114,12 @@ class Api::V1::IdeasControllerTest < ActionController::TestCase
     put :update, id: ideas(:one), idea: updated_content, format: :json
 
     assert_response 422
+  end
+
+  test "#destroy removes an idea" do
+    assert_difference 'Idea.count', -1 do
+      delete :destroy, id: ideas(:one), format: :json
+    end
   end
 
 end
