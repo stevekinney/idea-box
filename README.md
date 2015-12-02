@@ -682,6 +682,47 @@ class BasicTemplateTest < ActionDispatch::IntegrationTest
 end
 ```
 
-Run your tests using `rake` and watch your new test fail.
+Run your tests using `rake` and watch your new test fail. `No route matches [GET] "/"` it will say and its right. We're not totally out of Rails country just yet. Let's generate a controller for our static template.
+
+```
+rails g controller static
+rm app/assets/javascripts/static.js
+rm app/assets/stylesheets/static.scss
+rm app/helpers/static_helper.rb
+rm test/controllers/static_controller_test.rb
+```
+
+In `config/routes.rb`, let's have the root of our application point to our new static route.
+
+```rb
+root to: 'static#main'
+```
+
+We'll add a `main` action to our `app/controllers/static_controller.rb`.
+
+```rb
+def main
+end
+```
+
+Finally, we'll make a template for this action.
+
+```
+touch app/views/static/main.html
+```
+
+We'll run the test suite and swim enjoy its wonderfulness.
+
+### Getting the Basic Structure Up and Running
+
+I know I'm going to want a few things on my page:
+
+- An `<h1>` with the name of the application.
+- A `<div>` with the class of `ideas` for rendering my ideas into.
+- A form for creating new ideas.
+
+
+
+
 
 
