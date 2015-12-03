@@ -49,6 +49,7 @@ GEM
       xpath (~> 2.0)
     cliver (0.3.2)
     coderay (1.1.0)
+    database_cleaner (1.5.1)
     debug_inspector (0.0.2)
     docile (1.1.5)
     erubis (2.7.0)
@@ -162,6 +163,7 @@ PLATFORMS
 
 DEPENDENCIES
   capybara
+  database_cleaner
   jquery-rails
   launchy
   lodash-rails

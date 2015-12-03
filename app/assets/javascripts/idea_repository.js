@@ -1,14 +1,13 @@
 $(document).ready(function () {
-  IdeaRepository.all()
-                .then(renderIdeas)
-                .then(function (ideas) {
-                  appendIdeasToTarget(ideas, '.ideas')
-                });
+  fetchAndRenderIdeas();
 });
 
-IdeaRepository = {
+var IdeaRepository = {
   all: function () {
     return $.getJSON('/api/v1/ideas');
+  },
+  create: function (idea) {
+    return $.post('/api/v1/ideas', {idea: idea});
   }
 };
 
@@ -26,7 +25,7 @@ var ideaTemplate = _.template(
       '<button class="idea-delete">Delete</button>' +
     '</div>' +
   '</div>'
-)
+);
 
 function renderIdea(idea) {
   return $(ideaTemplate(idea));
@@ -36,7 +35,15 @@ function renderIdeas(ideas) {
   return ideas.map(renderIdea);
 }
 
-function appendIdeasToTarget(ideas, target) {
-  $(target).append(ideas);
+function renderIdeasToTarger(ideas, target) {
+  $(target).html(ideas);
   return ideas;
+}
+
+function fetchAndRenderIdeas() {
+  return IdeaRepository.all()
+                       .then(renderIdeas)
+                       .then(function (ideas) {
+                          renderIdeasToTarger(ideas, '.ideas');
+                       });
 }

@@ -985,3 +985,73 @@ function renderIdea(idea) {
 }
 ```
 
+### Adding an Idea
+
+In order to add an idea, we need to do the following:
+
+- Bind an event listener to the "Submit Idea" button.
+- Stop the default browser action from happening. The default browser action would cause the browser to dump the page and request a new one.
+- Get the values of the title and body fields in the new idea form.
+- Send an AJAX POST request to the server.
+- Deal with the response.
+   - On success, prepend the idea to the list.
+   - On failure, display an error message.
+
+Let's write some functionality that handles the first three bullets.
+
+```js
+var newIdeaTitle, newIdeaBody;
+
+$(document).ready(function () {
+  newIdeaTitle = $('.new-idea-title');
+  newIdeaBody = $('.new-idea-body');
+
+  $('.new-idea-submit').on('click', createIdea);
+});
+
+function createIdea(event) {
+  event.preventDefault();
+
+  var newIdea = {
+    title: newIdeaTitle.val(),
+    body: newIdeaBody.val()
+  };
+
+  console.log(newIdea);
+}
+```
+
+We'll make room for `newIdeaTitle` and `newIdeaBody` in the global scope. When the document is ready, we'll assign values to those variables. We'll also bind `createIdea` as an event listener to the "Submit Idea" button. Right now, it will just log to the console for a moment.
+
+In `idea_respository.js`, we'll add a new method to `IdeaRepository` for creating new methods.
+
+```js
+var IdeaRepository = {
+  all: function () {
+    return $.getJSON('/api/v1/ideas');
+  },
+  create: function (idea) {
+    return $.post('/api/v1/ideas', {idea: idea});
+  }
+};
+```
+
+Our `IdeaRepository` abstraction will take advantage of formatting the data and keeping track of the endpoint for us.
+
+Let's finally get around to writing a test, shall we?
+
+```rb
+test "it creates a new idea upon form submission" do
+  assert_difference 'Idea.count', 1 do
+    page.fill_in "idea[title]", with: 'Special Idea'
+    page.fill_in "idea[body]", with: 'World domination'
+    page.click_button "Submit Idea"
+  end
+end
+```
+
+#### The Hassles of Asynchrous Code and Multiple Threads
+
+We haven't implemented a solution, but there are two reasons why this test will never pass. First, is that we're firing an AJAX request and the test will validate the assertion before it actually fires. The second is that our integration test is running on a different thread than our database.
+
+
