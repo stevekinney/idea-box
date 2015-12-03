@@ -911,16 +911,20 @@ $(document).ready(function () {
 function createIdea(event) {
   event.preventDefault();
 
-  var newIdea = {
-    title: newIdeaTitle.val(),
-    body: newIdeaBody.val()
-  };
+  var newIdea = getIdeaPropertiesFromForm();
 
   console.log(newIdea);
 }
+
+function getIdeaPropertiesFromForm() {
+  return {
+    title: newIdeaTitle.val(),
+    body: newIdeaBody.val()
+  };
+}
 ```
 
-We'll make room for `newIdeaTitle` and `newIdeaBody` in the global scope. When the document is ready, we'll assign values to those variables. We'll also bind `createIdea` as an event listener to the "Submit Idea" button. Right now, it will just log to the console for a moment.
+We'll make room for `newIdeaTitle` and `newIdeaBody` in the global scope. When the document is ready, we'll assign values to those variables by way of `getIdeaPropertiesFromForm`. We'll also bind `createIdea` as an event listener to the "Submit Idea" button. Right now, it will just log to the console for a moment. In a perfect world, we could use Mocha to unit test that every step of the way, but writing JavaScript in Rails is always a bit of a compromise.
 
 In `idea_respository.js`, we'll add a new method to `IdeaRepository` for creating new methods.
 
@@ -946,7 +950,95 @@ test "it creates a new idea upon form submission" do
 end
 ```
 
+We'll update our `createIdea` function to actually send a request.
+
+```js
+function createIdea(event) {
+  event.preventDefault();
+
+  var newIdea = getIdeaPropertiesFromForm();
+
+  IdeaRepository.create(newIdea);
+}
+```
+
 #### The Hassles of Asynchrous Code and Multiple Threads
 
-We haven't implemented a solution, but there are two reasons why this test will never pass. First, is that we're firing an AJAX request and the test will validate the assertion before it actually fires. The second is that our integration test is running on a different thread than our database.
+There are two reasons why this test will never pass. First, is that we're firing an AJAX request and the test will validate the assertion before it actually fires. The second is that our integration test is running on a different thread than our database.
 
+We'll have to implement two little features in order to get everything moving along.
+
+1. Our test suite is not goin to wait for the AJAX to complete before testing if our new idea is in the database.
+2. Our Poltergeist instance is running on a different thread from our database test. The Rails default of using transactions isn't going to work. So, we'll have switch strategies and use `DatabaseCleaner` to help us out.
+
+The first one is fairly straight-forward. We'll need to implement a method that checks with jQuery to see if we have any active AJAX requests and if so, kicks the can down the road and waits a little bit before checking again. To do this, we'll add an addition pair of methods to `ActionDispatch::IntegrationTest` in `test/test_helper.rb`.
+
+```rb
+def wait_for_ajax
+  Timeout.timeout(Capybara.default_max_wait_time) do
+    loop until finished_all_ajax_requests?
+  end
+end
+
+def finished_all_ajax_requests?
+  page.evaluate_script('jQuery.active').zero?
+end
+```
+
+We'll now have access to `wait_for_ajax` in all of our integration tests.
+
+We'll also need to add `database_clearner` to our `Gemfile` and `bundle`. Then we can add the following methods to `ActionDispatch::IntegrationTest` as well.
+
+```rb
+def setup
+  DatabaseCleaner.strategy = :truncation
+  DatabaseCleaner.start
+end
+
+def teardown
+  DatabaseCleaner.clean
+end
+```
+
+If you ever override `setup` or `teardown` then you'll have to call up to the super class. We actually do this in `test/integration/creating_ideas_test.rb`. So, we'll have to call `super`. Your test file, should now look something like this:
+
+```rb
+require 'test_helper'
+
+class LoadingIdeasTest < ActionDispatch::IntegrationTest
+
+  def setup
+    super
+    use_javascript
+    visit root_path
+  end
+
+  def teardown
+    super
+    reset_driver
+  end
+
+  test "it creates a new idea upon form submission" do
+    assert_difference 'Idea.count', 1 do
+      page.fill_in "idea[title]", with: 'Special Idea'
+      page.fill_in "idea[body]", with: 'World domination'
+      page.click_button "Submit Idea"
+    end
+  end
+
+end
+```
+
+If we update our test to use the new `wait_for_ajax` function, our suite should pass.
+
+```rb
+test "it creates a new idea upon form submission" do
+  assert_difference 'Idea.count', 1 do
+    page.fill_in "idea[title]", with: 'Special Idea'
+    page.fill_in "idea[body]", with: 'World domination'
+    page.click_button "Submit Idea"
+  end
+end
+```
+
+This sounds like a good time to make a commit.
