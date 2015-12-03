@@ -1751,3 +1751,12 @@ function updateIdea() {
   });
 }
 ```
+
+## Towards an Object Oriented Approach
+
+So, we have this mess of functions all of the place that we're trying to attach onto an individual idea object. It's kind of sloppy, messy, and difficult because we're trying to manage two things:
+
+- Individual ideas and their state
+- Methods that work on that state
+
+The Rubyist in you should be througholy annoyned at this point. What we're doing right now seems hacky because it is. It would be much nicer if every idea could just refer to another object that stored all of the shared methods that each idea might need. This sounds like a job for protoypal inheritance.
