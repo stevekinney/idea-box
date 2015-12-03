@@ -12,6 +12,7 @@ class LoadingIdeasTest < ActionDispatch::IntegrationTest
   end
 
   test "it should load all of the ideas with an .idea div" do
+    wait_for_ajax
     within :css, '.ideas' do
       assert_equal Idea.count, page.find_all('.idea').count
     end

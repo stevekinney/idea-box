@@ -231,6 +231,8 @@ class Api::V1::IdeasController < ApplicationController
 end
 ```
 
+(Yes, we're sneakily preparing for a future requirement where we want them in reverse chronological order.)
+
 Let's take one more stab at running our tests—and we're green! Let's go ahead and make another commit.
 
 ## Testing Our Controller Actions
@@ -823,6 +825,7 @@ I won't subject you to implementing each HTML element one at a time. Here is the
         <label class="new-idea-label">Idea Body</label>
         <input type="text" class="new-idea-body new-idea-input" name="idea[body]" placeholder="Idea Body">
       </div>
+      <div class="new-idea-messages"></div>
       <input type="submit" class="new-idea-submit" value="Submit Idea">
     </form>
   </section>
@@ -1042,3 +1045,285 @@ end
 
 This sounds like a good time to make a commit, right?
 
+#### Testing the Unhappy Path
+
+So, what happens if we pass invalid data? If that happens, we should not have a new record in our database, right? Let's write a test!
+
+```rb
+test "it does not create a new idea upon invalid form submission" do
+  assert_difference 'Idea.count', 0 do
+    page.fill_in "idea[title]", with: ''
+    page.fill_in "idea[body]", with: ''
+    page.click_button "Submit Idea"
+    wait_for_ajax
+  end
+end
+```
+
+Our server handles that pretty, well. We have controller tests that verify that this won't happen, but it sure would be nice to have an error message, right? In our HTML, we gave ourselves `<div class="new-idea-messages">` to display messages if needed. It would be cool if we could display a semi-helpful error message.
+
+Let's write a test, shall we? Our API will give us a list of everything that went wrong when we send in an idea that doesn't pass the ActiveRecord validation muster. For the sake of brevity, we'll assume that its because they didn't pass in a title or body for the idea and just display a general error message. In a later iteration, we might parse the error we got back from Rails and then display a custom error message.
+
+```rb
+test "it shows an error saying that the title or body cannot be blank if missing" do
+  page.click_button "Submit Idea"
+
+  wait_for_ajax
+
+  assert page.find('.new-idea-messages').has_content? 'Title and/or body cannot be blank.'
+end
+```
+
+In our implementation, we'll respond to a failure and then display that message.
+
+```js
+function createIdea(event) {
+  event.preventDefault();
+  IdeaRepository.create(getNewIdea())
+                .fail(renderError);
+}
+```
+
+As we discussed before. This isn't perfect. It will technically display this message even if the request times out, but its a good first pass and we would come back later and add test coverage and implementation for all of the nuances. We probably also want to clear out the error when we go to submit it again.
+
+```rb
+test "it removes the error on subsequent submissions" do
+  page.click_button "Submit Idea"
+
+  wait_for_ajax
+
+  page.fill_in "idea[title]", with: "Special Idea"
+  page.fill_in "idea[body]", with: "World domination"
+  page.click_button "Submit Idea"
+
+  refute page.find('.new-idea-messages').has_content? 'Title and/or body cannot be blank.'
+end
+```
+
+Implementing this is pretty simple. We'll add a `clearErrors()` function.
+
+```js
+function createIdea(event) {
+  event.preventDefault();
+  clearErrors();
+  IdeaRepository.create(getNewIdea())
+                .fail(renderError);
+}
+
+function clearErrors() {
+  return errorMessages.html('');
+}
+```
+
+The tests should pass.
+
+### Displaying Ideas
+
+We know that at some point, we're going to need to render a template for each idea. So, let's get hat out of the way now. We'll Lodash's `_.template` function to help us out here. We will need to install Lodash first, however.
+
+- Add the `lodash-rails` gem to your `Gemfile`
+- `bundle`
+- Add `//= require lodash` to the Asset Pipeline in `app/assets/javascripts/application.js`
+
+We'll create a new file called `app/assets/javascripts/idea_template.js` with the following content.
+
+```js
+var ideaTemplate = _.template(
+  '<div class="idea">' +
+    '<h2 class="idea-title"><%= title %></h2>' +
+    '<p class="idea-body"><%= body %></p>' +
+    '<p class="idea-quality"><%= quality %></p>' +
+    '<div class="idea-qualities idea-buttons">' +
+      '<button class="idea-promote">Promote</button>' +
+      '<button class="idea-demote">Demote</button>' +
+      '<button class="idea-delete">Delete</button>' +
+    '</div>' +
+  '</div>'
+);
+```
+
+This will serve as our template for rendering new ideas to the page. In `app/assets/javascripts/idea_repository.js`, let's give ourselves another helper method to fetch these ideas.
+
+```js
+var IdeaRepository = {
+  all: function () {
+    return $.getJSON('/api/v1/ideas')
+            .then(renderIdeas);
+  },
+  create: function (idea) {
+    return $.post('/api/v1/ideas', {idea: idea});
+  }
+};
+```
+
+This won't work out of the box because we don't have a `renderIdeas` function just yet. We'll create a file called `app/assets/javascripts/render_idea.js` to serve as a home for this functionality. The purpose of `renderIdeas` is to kind of serve the same role as ActiveRecord. We'll take our plain old JavaScript object and give it some additional methods, much like ActiveRecord gives us some methods around some information in a database row.
+
+With any given idea, we'll probably need to do the following:
+
+- Shove it into `ideaTemplate` and get back a HTML structure
+- Turn that into a DOM Node with jQuery
+- Bind some event listeners to it for promoting, demoting, and deleting
+- Add it to the ideas container
+
+`renderIdeas` is a simple one. All it is going to do is map over the ideas, call a second function named `renderIdea` on each of them and return back the original array.
+
+```js
+function renderIdeas(ideas) {
+  ideas.map(renderIdea);
+  return ideas;
+}
+```
+
+So, that leads us to `renderIdea`, which has to do the heaving lifting of patching our Idea objects with super powers.
+
+```js
+function renderIdea(idea) {
+  idea.render = function () {
+    this.element = $(ideaTemplate(this));
+    return this;
+  };
+
+  idea.prependTo = function (target) {
+    this.element.prependTo(target);
+    return this;
+  };
+
+  return idea.render();
+}
+```
+
+We'll start by giving our ideas two new methods:
+
+- `render()`, which will plug the idea into the template and then wrap the result in jQuery.
+- `prependTo()`, which will tell the idea to prepend itself to some existing node in the DOM.
+
+When the document loads, we'll want to fetch all of the ideas from the server and then prepend them to the `.ideas` element.
+
+At the top of `render_ideas.js`, we'll find the ideas container when the document loads.
+
+```js
+var ideasContainer;
+
+$(document).ready(function () {
+  ideasContainer = $('.ideas');
+});
+```
+
+Next, we'll give ourselves a helper function for iterating over the ideas and telling each one to prepend itself to the page.
+
+```js
+function prependIdeaToContainer(idea) {
+  idea.prependTo(ideasContainer);
+  return idea;
+}
+
+function prependIdeasToContainer(ideas) {
+  return ideas.map(prependIdeaToContainer);
+}
+```
+
+You may be asking why I'm making a singular and plural version of each function. I already know I'm going to have deal with individual ideas on creation, so I'm giving myself a hook there as well as an abstraction that makes it easier to work with a collection of ideas.
+
+And finally, we'll tie it all together by loading up the ideas, rendering them, and then prepending them to the page when the document is ready.
+
+```js
+var ideasContainer;
+
+$(document).ready(function () {
+  ideasContainer = $('.ideas');
+
+  IdeaRepository.all()
+                .then(renderIdeas)
+                .then(prependIdeasToContainer);
+});
+```
+
+The super cool thing about promises is that the return value of each function we pass to the `then` method on a promise is then passed to the next `then` method. So, all of the plain JavaScript objects are passed from `all()` to `renderIdeas`, but it's that mapped array that then gets passed to `prependIdeasToContainer`. It's essentially like method-chaning enumerables but with code that you received asynchronously.
+
+If you've got Rails server up and running, then you can verify that your ideas on the page. But we'll probably also want a test in place as well. We'll generate a test.
+
+```
+rails g intergration_test loading_ideas
+```
+
+In that file, we'll add the following:
+
+```rb
+require 'test_helper'
+
+class LoadingIdeasTest < ActionDispatch::IntegrationTest
+
+  def setup
+    use_javascript
+    visit root_path
+  end
+
+  def teardown
+    reset_driver
+  end
+
+  test "it should load all of the ideas with an .idea div" do
+    wait_for_ajax
+    within :css, '.ideas' do
+      assert_equal Idea.count, page.find_all('.idea').count
+    end
+  end
+
+end
+```
+
+In the test above, we're expecting to find all of ideas in the page that we have in the database.
+
+Run the tests, verify that they pass and then make a commit.
+
+### Adding the Ideas We Create to the Page
+
+So, hitting "Submit Idea" will add a new idea to the database, but as it stands, it does not actually put it on the page. Let's crack open our `test/integration/creating_ideas_test.rb` file and add another test.
+
+```rb
+test "it adds a new idea to the page" do
+  assert_difference "page.find_all('.idea').count", 1 do
+    page.fill_in "idea[title]", with: "Special Idea"
+    page.fill_in "idea[body]", with: "World domination"
+    page.click_button "Submit Idea"
+
+    wait_for_ajax
+  end
+end
+```
+
+We're expecting one more on the page. Let's run it and watch it fail.
+
+Getting this test to pass it pretty easy. We basically need to do two things:
+
+- Take the JavaScript object we get back from the API and pass it into `renderIdea`.
+- Take the resulting object and pass prepend it to the list of ideas.
+
+For listing our ideas on page load, we made the process of giving an idea its super powers part of `IdeaRepository`. So, let's update that to render our new idea after it loads in `app/assets/javascripts/idea_repository.rb`.
+
+```rb
+var IdeaRepository = {
+  all: function () {
+    return $.getJSON('/api/v1/ideas')
+            .then(renderIdeas);
+  },
+  create: function (idea) {
+    return $.post('/api/v1/ideas', {idea: idea})
+            .then(renderIdea);
+  }
+};
+```
+
+Now we see why having singular and plural version helps. It gives a nice clean syntax. We just need to prepend it onto the page after we create it in `app/assets/javascripts/create_idea.js`.
+
+```js
+function createIdea(event) {
+  event.preventDefault();
+  clearErrors();
+  IdeaRepository.create(getNewIdea())
+                .then(prependIdeaToContainer)
+                .fail(renderError);
+}
+```
+
+If we run our tests, we'll see that it now passes. So, let's commit.
