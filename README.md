@@ -967,6 +967,10 @@ We'll have to implement two little features in order to get everything moving al
 
 The first one is fairly straight-forward. We'll need to implement a method that checks with jQuery to see if we have any active AJAX requests and if so, kicks the can down the road and waits a little bit before checking again. To do this, we'll add an addition pair of methods to `ActionDispatch::IntegrationTest` in `test/test_helper.rb`.
 
+This a popular technique that has been floating around for a while. I stole it from [here][wfa].
+
+[wfa]: https://robots.thoughtbot.com/automatically-wait-for-ajax-with-capybara
+
 ```rb
 def wait_for_ajax
   Timeout.timeout(Capybara.default_max_wait_time) do
