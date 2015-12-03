@@ -92,3 +92,8 @@ input[type="submit"], button {
     background-color: darken($danger-color, 10);
   }
 }
+
+.new-idea-messages {
+  margin-bottom: 1em;
+  color: $danger-color;
+}

@@ -1,5 +1,19 @@
 # Idea Box
 
+## Preamble
+
+This is tutorial is the account of my first pass at IdeaBox. It test-drives the API from the ground up, implements some integration tests, adds support for displaying ideas, creating ideas, updating ideas, and adjusting the quality of ideas. It does not implement sorting, truncation, or filtering.
+
+In addition, I placed myself under some additional constraints that I wouldn't have if I was just writing it on my own. I did not use anything that wasn't at least somewhat shown to you in the first three days of Module 4. This means, I could not use any of the following:
+
+- Unit-testing JavaScript
+- Mocks, stubs, and spies in JavaScript testing
+- Object-oriented JavaScript
+- Event delegation
+- Advanced functional programming techniques
+
+My plan is to revisit this guide and add those features as we learn them throughout the module. We'll revist this application throughout the module. Feedback, suggestions, and pull requests are more than welcome.
+
 ## Getting Started
 
 Let's get this thing off the ground. First things first, let's create a new Rails application with all of the bells and whistles that suit our fancy. You might choose to select different options, these are my tastes.
@@ -1455,4 +1469,273 @@ Run the test suite and it should world as expected.
 
 ### Promoting and Demoting Ideas
 
+The last feature that we're going to implement in this tutorial is the ability to promote and demote the quality of a given idea. Since the `update` action in our controller is relatively simple, this will also serve as a template for how to impletement an update feature as well for the title and body of an idea.
 
+We'll generate another test file in `test/integration/update_idea.rb`
+
+Let's start with a battery of tests to exercise this functionality.
+
+```rb
+require 'test_helper'
+
+class UpdateIdeasTest < ActionDispatch::IntegrationTest
+
+  def setup
+    use_javascript
+    visit root_path
+  end
+
+  def teardown
+    reset_driver
+  end
+
+  test "promote button should promote the quality of an idea" do
+    create_idea_by_filling_out_form
+    idea = get_top_idea
+    click_the_promote_button_on_idea(idea)
+
+    assert idea.find('.idea-quality').has_content? 'Plausible'
+  end
+
+  test "clicking promote button twice should promote the quality of an idea to genius" do
+    create_idea_by_filling_out_form
+    idea = get_top_idea
+    click_the_promote_button_on_idea(idea)
+    click_the_promote_button_on_idea(idea)
+
+    assert idea.find('.idea-quality').has_content? 'Genius'
+  end
+
+  test "clicking promote button thris should not promote the quality past genius" do
+    create_idea_by_filling_out_form
+    idea = get_top_idea
+    click_the_promote_button_on_idea(idea)
+    click_the_promote_button_on_idea(idea)
+    click_the_promote_button_on_idea(idea)
+
+    assert idea.find('.idea-quality').has_content? 'Genius'
+  end
+
+  test "demoting a swill idea should keep it as swill" do
+    create_idea_by_filling_out_form
+    idea = get_top_idea
+    click_the_demote_button_on_idea(idea)
+
+    assert idea.find('.idea-quality').has_content? 'Swill'
+  end
+
+  test "promoting and then demoting an idea should return it to swill" do
+    create_idea_by_filling_out_form
+    idea = get_top_idea
+    click_the_promote_button_on_idea(idea)
+    click_the_demote_button_on_idea(idea)
+
+    assert idea.find('.idea-quality').has_content? 'Swill'
+  end
+
+  private
+
+  def create_idea_by_filling_out_form
+    page.fill_in "idea[title]", with: "Gone Soon"
+    page.fill_in "idea[body]", with: "Bye"
+    page.click_button "Submit Idea"
+
+    wait_for_ajax
+  end
+
+  def get_top_idea
+    page.find('.idea:first-child')
+  end
+
+  def click_the_promote_button_on_idea(idea)
+    idea.find(".idea-promote").click
+    wait_for_ajax
+  end
+
+  def click_the_demote_button_on_idea(idea)
+    idea.find(".idea-demote").click
+    wait_for_ajax
+  end
+
+end
+```
+
+Now that we have some tests that exercise this functionality, let's add some implementation.
+
+So, with my current approach, I've jammed a bunch of additional methods onto each idea object. We'll look at a *much* better way to do this next week, but for now, this is all we have at our disposal. That said, I don't want to send all these methods back over to Rails.
+
+Rails is expecting three things: a title, a body, and a quality. Ideally, I only want to send those properties over the wire. This is easy enough to do by hand, I could do somethind like:
+
+```js
+idea.toJSON = function () {
+  return {
+    title: this.title,
+    body: this.body,
+    quality: this.quality
+  }
+};
+```
+
+But, I already have Lodash installed so that means I can use `_.pick` to just pick the properties I want.
+
+```js
+idea.toJSON = function () {
+  return { idea: _.pick(this, ['title', 'body', 'quality']) }
+};
+```
+
+I'm also nesting it in an object with the key of ideas, that way Rails gets it as `params[:ideas]`.
+
+I can also implement an `updateIdea` that will prepare an AJAX request with whatever the current state of the object is in `app/assets/javascripts/idea_actions.js`.
+
+```js
+function updateIdea() {
+  return $.ajax({
+    method: 'PUT',
+    url: '/api/v1/ideas/' + this.id,
+    data: this.toJSON()
+  });
+}
+```
+
+This is a really flexible function that will be reusable later on if I were to implement updating the title and body of the idea. A first draft of promotion and demotion of ideas will work with conditionals, update the property if necessary, and then let the update method that the given idea has been updated.
+
+```js
+function promoteIdea() {
+  if (this.quality === 'plausible') { this.quality = 'genius'; }
+  if (this.quality === 'swill') { this.quality = 'plausible'; }
+  return this.update();
+}
+
+function demoteIdea() {
+  if (this.quality === 'plausible') { this.quality = 'swill'; }
+  if (this.quality === 'genius') { this.quality = 'plausible'; }
+  return this.update();
+}
+```
+
+We can add each of these function to our objects as methods. Since `this` is based on the context of the object it's being called from, these functions will work for each individual idea and be scoped appropriately.
+
+```js
+idea.promote = promoteIdea;
+idea.demote = demoteIdea;
+idea.delete = deleteIdea;
+idea.update = updateIdea;
+```
+
+(You might be wondering if there is a better way to do this. There is. Next week we'll talk about how to attach these to the prototype chain. In that scenario, each idea would just call up to an object that had all of these methods ready and waiting.)
+
+Trying to be a DOM surgeon and just change little pieces of the DOM based on changes to you model is hard and tedious. It often involves a whole lot of traversal and other things that are more work thant their worth. We'll implement a `rerender` method that will do the following:
+
+1. Call jQuery's `replaceWith` method.
+2. Pass in a new version of the template based on the updated quality.
+3. Bind events to that new version before sending it along.
+4. Let jQuery do some magic of swapping one out with the other.
+
+```js
+idea.rerender = function () {
+  idea.element.replaceWith(idea.render().bindEvents().element);
+  return idea;
+};
+```
+
+Finally, we'll add the additional event listeners to `bindEvents` so that our "Promote" and "Demote" buttons work.
+
+```js
+idea.bindEvents = function () {
+  idea.element.find('.idea-delete').on('click', function () {
+    idea.delete();
+  });
+
+  idea.element.find('.idea-promote').on('click', function () {
+    idea.promote().then(idea.rerender);
+  });
+
+  idea.element.find('.idea-demote').on('click', function () {
+    idea.demote().then(idea.rerender);
+  });
+
+  return idea;
+};
+```
+
+Our tests should now pass. Just in case they don't, here is there current contents of `renderIdea` and `app/assets/javascripts/idea_actions.js`.
+
+```js
+function renderIdea(idea) {
+  idea.render = function () {
+    idea.element = $(ideaTemplate(idea));
+    return idea;
+  };
+
+  idea.rerender = function () {
+    idea.element.replaceWith(idea.render().bindEvents().element);
+    return idea;
+  };
+
+  idea.prependTo = function (target) {
+    idea.element.prependTo(target);
+    return idea;
+  };
+
+  idea.toJSON = function () {
+    return { idea: _.pick(this, ['title', 'body', 'quality']) }
+  };
+
+  idea.promote = promoteIdea;
+  idea.demote = demoteIdea;
+  idea.delete = deleteIdea;
+  idea.update = updateIdea;
+
+  idea.bindEvents = function () {
+    idea.element.find('.idea-delete').on('click', function () {
+      idea.delete();
+    });
+
+    idea.element.find('.idea-promote').on('click', function () {
+      idea.promote().then(idea.rerender);
+    });
+
+    idea.element.find('.idea-demote').on('click', function () {
+      idea.demote().then(idea.rerender);
+    });
+
+    return idea;
+  };
+
+  return idea.render().bindEvents();
+}
+```
+
+```js
+// app/assets/javascripts/idea_actions.js
+
+function promoteIdea() {
+  if (this.quality === 'plausible') { this.quality = 'genius'; }
+  if (this.quality === 'swill') { this.quality = 'plausible'; }
+  return this.update();
+}
+
+function demoteIdea() {
+  if (this.quality === 'plausible') { this.quality = 'swill'; }
+  if (this.quality === 'genius') { this.quality = 'plausible'; }
+  return this.update();
+}
+
+function deleteIdea() {
+  $.ajax({
+    method: 'DELETE',
+    url: '/api/v1/ideas/' + this.id
+  }).then(function () {
+    this.element.remove();
+  }.bind(this));
+}
+
+function updateIdea() {
+  return $.ajax({
+    method: 'PUT',
+    url: '/api/v1/ideas/' + this.id,
+    data: this.toJSON()
+  });
+}
+```
