@@ -3,6 +3,10 @@ require 'test_helper'
 class DeletingIdeasTest < ActionDispatch::IntegrationTest
 
   def setup
+<<<<<<< Updated upstream
+=======
+    create_idea
+>>>>>>> Stashed changes
     use_javascript
     visit root_path
   end
@@ -12,8 +16,6 @@ class DeletingIdeasTest < ActionDispatch::IntegrationTest
   end
 
   test "delete button removes an idea from the page" do
-    create_idea_by_filling_out_form
-
     assert_difference "page.find_all('.idea').count", -1 do
       page.find_all(".idea-delete").first.click
 
@@ -22,8 +24,6 @@ class DeletingIdeasTest < ActionDispatch::IntegrationTest
   end
 
   test "delete button removes the correct idea from the page" do
-    create_idea_by_filling_out_form
-
     idea_div = page.find(".idea:first-child")
     idea_title = idea_div.find(".idea-title").text
 
@@ -36,12 +36,8 @@ class DeletingIdeasTest < ActionDispatch::IntegrationTest
 
   private
 
-  def create_idea_by_filling_out_form
-    page.fill_in "idea[title]", with: "Gone Soon"
-    page.fill_in "idea[body]", with: "Bye"
-    page.click_button "Submit Idea"
-
-    wait_for_ajax
+  def create_idea
+    Idea.create(title: "Gone Soon", body: "Bye")
   end
 
 end
