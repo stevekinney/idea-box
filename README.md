@@ -63,9 +63,9 @@ rails generate model idea title:string body:text quality:integer
 
 The next step is to migrate the database with `rake db:create db:migrate`. (Keep in mind, you might already have a database with the same name if you've done this project before. Forewarned is forearmed.)
 
-The specification says that, by default, all ideas start out at the lowest quality rating. Right now, `quality` is just an integer, so let's awesome that `0` represents the lowest possible quality.
+The specification says that, by default, all ideas start out at the lowest quality rating. Right now, `quality` is just an integer, so let's assume that `0` represents the lowest possible quality.
 
-Step one is to ourselves a nice little test in `test/models/idea_test.rb`. Let's replace the automatically generated—yet commented out—test with our own.
+Step one is to implement a nice little test in `test/models/idea_test.rb`. Let's replace the automatically generated—yet commented out—test with our own.
 
 ```rb
 test "should have a quality that defaults to 0" do
