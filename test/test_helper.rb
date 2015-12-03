@@ -1,11 +1,11 @@
 ENV['RAILS_ENV'] ||= 'test'
 require File.expand_path('../../config/environment', __FILE__)
 require 'rails/test_help'
+require 'minitest/pride'
 require 'capybara/rails'
 require 'capybara/poltergeist'
 
 Capybara.javascript_driver = :poltergeist
-DatabaseCleaner.strategy = :truncation
 
 class ActiveSupport::TestCase
   fixtures :all
@@ -23,7 +23,7 @@ class ActionDispatch::IntegrationTest
 
   def setup
     DatabaseCleaner.strategy = :truncation
-    DatabaseCleaner.clean_with(:truncation)
+    DatabaseCleaner.clean_with :truncation
     DatabaseCleaner.start
   end
 
