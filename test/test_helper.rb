@@ -37,7 +37,7 @@ class ActionDispatch::IntegrationTest
   end
 
   def reset_driver
-    Capybara.current_driver = nil
+    # Capybara.current_driver = nil
   end
 
   def wait_for_ajax
