@@ -9,13 +9,10 @@ $(document).ready(function () {
 
 function createIdea(event) {
   event.preventDefault();
-
-  var newIdea = getIdeaPropertiesFromForm();
-
-  IdeaRepository.create(newIdea).then(fetchAndRenderIdeas);
+  IdeaRepository.create(getNewIdea()).then(fetchAndRenderIdeas);
 }
 
-function getIdeaPropertiesFromForm() {
+function getNewIdea() {
   return {
     title: newIdeaTitle.val(),
     body: newIdeaBody.val()

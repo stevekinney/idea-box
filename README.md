@@ -910,13 +910,10 @@ $(document).ready(function () {
 
 function createIdea(event) {
   event.preventDefault();
-
-  var newIdea = getIdeaPropertiesFromForm();
-
-  console.log(newIdea);
+  console.log(getNewIdea());
 }
 
-function getIdeaPropertiesFromForm() {
+function getNewIdea() {
   return {
     title: newIdeaTitle.val(),
     body: newIdeaBody.val()
@@ -955,10 +952,7 @@ We'll update our `createIdea` function to actually send a request.
 ```js
 function createIdea(event) {
   event.preventDefault();
-
-  var newIdea = getIdeaPropertiesFromForm();
-
-  IdeaRepository.create(newIdea);
+  IdeaRepository.create(getNewIdea());
 }
 ```
 
@@ -1037,8 +1031,10 @@ test "it creates a new idea upon form submission" do
     page.fill_in "idea[title]", with: 'Special Idea'
     page.fill_in "idea[body]", with: 'World domination'
     page.click_button "Submit Idea"
+    wait_for_ajax
   end
 end
 ```
 
-This sounds like a good time to make a commit.
+This sounds like a good time to make a commit, right?
+
