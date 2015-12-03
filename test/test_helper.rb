@@ -21,9 +21,10 @@ class ActionDispatch::IntegrationTest
   include Capybara::DSL
   include Rails.application.routes.url_helpers
 
+  DatabaseCleaner.strategy = :truncation
+  self.use_transactional_fixtures = false
+
   def setup
-    DatabaseCleaner.strategy = :truncation
-    DatabaseCleaner.clean_with :truncation
     DatabaseCleaner.start
   end
 
