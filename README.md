@@ -1760,3 +1760,93 @@ So, we have this mess of functions all of the place that we're trying to attach 
 - Methods that work on that state
 
 The Rubyist in you should be througholy annoyned at this point. What we're doing right now seems hacky because it is. It would be much nicer if every idea could just refer to another object that stored all of the shared methods that each idea might need. This sounds like a job for protoypal inheritance.
+
+What would an object-oriented approach look like? Ideally could construct an object that held the data for an individual idea and then store all of the methods a single prototype object. Here is an example of what this might look like.
+
+```js
+function Idea(data) {
+  this.id = data.id;
+  this.title = data.title;
+  this.body = data.body;
+  this.quality = data.quality;
+
+  this.render().bindEvents();
+}
+
+Idea.prototype.promote = function () {
+  if (this.quality === 'plausible') { this.quality = 'genius'; }
+  if (this.quality === 'swill') { this.quality = 'plausible'; }
+  return this.update();
+};
+
+Idea.prototype.demote = function () {
+  if (this.quality === 'plausible') { this.quality = 'swill'; }
+  if (this.quality === 'genius') { this.quality = 'plausible'; }
+  return this.update();
+};
+
+Idea.prototype.delete = function () {
+  $.ajax({
+    method: 'DELETE',
+    url: '/api/v1/ideas/' + this.id
+  }).then(function () {
+    this.element.remove();
+  }.bind(this));
+};
+
+Idea.prototype.update = function () {
+  return $.ajax({
+    method: 'PUT',
+    url: '/api/v1/ideas/' + this.id,
+    data: this.toJSON()
+  });
+};
+
+Idea.prototype.render = function () {
+  this.element = $(ideaTemplate(this));
+  return this;
+};
+
+Idea.prototype.rerender = function () {
+  this.element.replaceWith(this.render().bindEvents().element);
+  return this;
+};
+
+Idea.prototype.prependTo = function (target) {
+  this.element.prependTo(target);
+  return this;
+};
+
+Idea.prototype.toJSON = function () {
+  return { idea: _.pick(this, ['title', 'body', 'quality']) };
+};
+
+Idea.prototype.bindEvents = function () {
+  this.element.find('.idea-delete').on('click', function () {
+    this.delete();
+  }.bind(this));
+
+  this.element.find('.idea-promote').on('click', function () {
+    this.promote().then(this.rerender.bind(this));
+  }.bind(this));
+
+  this.element.find('.idea-demote').on('click', function () {
+    this.demote().then(this.rerender.bind(this));
+  }.bind(this));
+
+  return this;
+};
+```
+
+Then we swap out our `renderIdea` with a call to our new object constructor. In `app/assets/javascripts/render_ideas.js`:
+
+```js
+function renderIdeas(ideas) {
+  return ideas.map(renderIdea);
+}
+
+function renderIdea(idea) {
+  return new Idea(idea);
+}
+```
+
