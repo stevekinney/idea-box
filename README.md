@@ -1226,7 +1226,9 @@ function renderIdea(idea) {
     this.element.prependTo(target);
     return this;
   };
-
+  def create_idea
+    Idea.create(title: "Gone Soon", body: "Bye")
+  end
   return idea.render();
 }
 ```
@@ -1383,6 +1385,7 @@ require 'test_helper'
 class DeletingIdeasTest < ActionDispatch::IntegrationTest
 
   def setup
+    create_idea
     use_javascript
     visit root_path
   end
@@ -1392,8 +1395,6 @@ class DeletingIdeasTest < ActionDispatch::IntegrationTest
   end
 
   test "delete button removes an idea from the page" do
-    create_idea_by_filling_out_form
-
     assert_difference "page.find_all('.idea').count", -1 do
       page.find_all(".idea-delete").first.click
 
@@ -1403,12 +1404,8 @@ class DeletingIdeasTest < ActionDispatch::IntegrationTest
 
   private
 
-  def create_idea_by_filling_out_form
-    page.fill_in "idea[title]", with: "Gone Soon"
-    page.fill_in "idea[body]", with: "Bye"
-    page.click_button "Submit Idea"
-
-    wait_for_ajax
+  def create_idea
+    Idea.create(title: "Gone Soon", body: "Bye")
   end
 
 end
@@ -1477,8 +1474,6 @@ It just so happens that our implementation will always be scoped to the correct 
 
 ```rb
 test "delete button removes the correct idea from the page" do
-  create_idea_by_filling_out_form
-
   idea_div = page.find(".idea:first-child")
   idea_title = idea_div.find(".idea-title").text
 
@@ -1506,6 +1501,7 @@ require 'test_helper'
 class UpdateIdeasTest < ActionDispatch::IntegrationTest
 
   def setup
+    create_idea
     use_javascript
     visit root_path
   end
@@ -1515,7 +1511,6 @@ class UpdateIdeasTest < ActionDispatch::IntegrationTest
   end
 
   test "promote button should promote the quality of an idea" do
-    create_idea_by_filling_out_form
     idea = get_top_idea
     click_the_promote_button_on_idea(idea)
 
@@ -1523,7 +1518,6 @@ class UpdateIdeasTest < ActionDispatch::IntegrationTest
   end
 
   test "clicking promote button twice should promote the quality of an idea to genius" do
-    create_idea_by_filling_out_form
     idea = get_top_idea
     click_the_promote_button_on_idea(idea)
     click_the_promote_button_on_idea(idea)
@@ -1532,7 +1526,6 @@ class UpdateIdeasTest < ActionDispatch::IntegrationTest
   end
 
   test "clicking promote button thris should not promote the quality past genius" do
-    create_idea_by_filling_out_form
     idea = get_top_idea
     click_the_promote_button_on_idea(idea)
     click_the_promote_button_on_idea(idea)
@@ -1542,7 +1535,6 @@ class UpdateIdeasTest < ActionDispatch::IntegrationTest
   end
 
   test "demoting a swill idea should keep it as swill" do
-    create_idea_by_filling_out_form
     idea = get_top_idea
     click_the_demote_button_on_idea(idea)
 
@@ -1550,7 +1542,6 @@ class UpdateIdeasTest < ActionDispatch::IntegrationTest
   end
 
   test "promoting and then demoting an idea should return it to swill" do
-    create_idea_by_filling_out_form
     idea = get_top_idea
     click_the_promote_button_on_idea(idea)
     click_the_demote_button_on_idea(idea)
@@ -1560,12 +1551,8 @@ class UpdateIdeasTest < ActionDispatch::IntegrationTest
 
   private
 
-  def create_idea_by_filling_out_form
-    page.fill_in "idea[title]", with: "Gone Soon"
-    page.fill_in "idea[body]", with: "Bye"
-    page.click_button "Submit Idea"
-
-    wait_for_ajax
+  def create_idea
+    Idea.create(title: "Gone Soon", body: "Bye")
   end
 
   def get_top_idea
