@@ -1,5 +1,6 @@
 $form-color: rgb(255, 245, 213);
 $button-color: rgb(29, 178, 212);
+$danger-color: rgb(196, 51, 49);
 
 * {
   -webkit-box-sizing: border-box;
@@ -21,6 +22,7 @@ body, input {
   background-color: $form-color;
   border: 5px solid darken($form-color, 10);
   padding: 1em;
+  margin-bottom: 2em;
 }
 
 .new-idea-field {
@@ -42,7 +44,7 @@ body, input {
   width: 100%;
 }
 
-.new-idea-submit {
+input[type="submit"], button {
   border: 0;
   color: white;
   background-color: $button-color;
@@ -53,5 +55,40 @@ body, input {
   }
   &:active {
     background-color: darken($button-color, 10);
+  }
+}
+
+.idea {
+  margin-bottom: 1em;
+  padding: 1em;
+  border: 5px solid #EEE;
+}
+
+.idea-quality {
+  text-transform: capitalize;
+  font-size: 0.8em;
+  &:before {
+    content: 'Quality: ';
+    font-weight: bold;
+  }
+}
+
+.idea-buttons {
+  font-size: 0.8em;
+  padding: 0.5em;
+  border: 1px solid #EEE;
+  margin-bottom: 0.5em;
+  & button {
+    margin-right: 1em;
+  }
+}
+
+.idea-delete {
+  background-color: $danger-color;
+  &:hover {
+    background-color: lighten($danger-color, 10);
+  }
+  &:active {
+    background-color: darken($danger-color, 10);
   }
 }

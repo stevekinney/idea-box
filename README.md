@@ -832,3 +832,156 @@ I won't subject you to implementing each HTML element one at a time. Here is the
 </div>
 ```
 
+**Side note**: I added some styles to make this more pleasant. You can see the styles I wrote in `app/assets/stylesheets/ideabox.scss`.
+
+### Testing Some JavaScript with Capybara
+
+It meakes sense that we're going to ned to test JavaScript eventually. So, let's go ahead and get that set up.
+
+Let's install Poltergeist, which uses the Webkit rendering engine—the basis for Safari and Chrome. In our `Gemfile` add the following to the development and test section:
+
+```rb
+gem 'poltergeist'
+```
+
+We'll also add the following to `test/test_helper.rb`.
+
+```rb
+require 'capybara/poltergeist'
+Capybara.javascript_driver = :poltergeist
+```
+
+I've also added a helper method to my integration tests which makes it easy to switch over to Poltergeist whenever I need to.
+
+```rb
+class ActionDispatch::IntegrationTest
+  include Capybara::DSL
+  include Rails.application.routes.url_helpers
+
+  def use_javascript
+    Capybara.current_driver = Capybara.javascript_driver
+  end
+
+  def reset_driver
+    Capybara.current_driver = nil
+  end
+end
+```
+
+Now, when I write a test, I can switch over to Poltergeist as follows:
+
+```rb
+test "something or other" do
+  use_javascript
+  visit root_path
+  # Do some stuff
+end
+```
+
+## Testing JavaScript
+
+Let's start with a basic integration test for making sure that all of our ideas loaded.
+
+```
+rails g integration_test loading_ideas
+```
+
+Let's write a test that verifies that all of our fixture ideas are rendered on the page.
+
+```rb
+test "it should load all of the ideas with an .idea div" do
+  within :css, '.ideas' do
+    assert_equal Idea.count, page.find_all('.idea').count
+  end
+end
+```
+
+This test will obviously fail because we're not loading any of the ideas onto the page, just yet. Let's add a file.
+
+```js
+touch app/assets/javascripts/idea_repository.js
+```
+
+Rails is agnostic of unit tests and it's beyond the scope of this tutorial to get into trying to set up a bridge between a JavaScript unit testing framework and Rails's testing framework. (My goal is to show you some best approaches while also staying as close as possible to the tools you had at your disposal when embarking on this project.) This means that we'll be flying without a net for a bit, but we'll eventually be caught by our integration tests.
+
+In `app/assets/javascripts/idea_repository.js`:
+
+```js
+$(document).ready(function () {
+  IdeaRepository.all()
+                .then(renderIdeas)
+                .then(function (ideas) {
+                  appendIdeasToTarget(ideas, '.ideas')
+                });
+});
+
+IdeaRepository = {
+  all: function () {
+    return $.getJSON('/api/v1/ideas');
+  }
+};
+
+function renderIdea(idea) {
+  return $('<div class="idea">' + idea.title + '</div>');
+}
+
+function renderIdeas(ideas) {
+  return ideas.map(renderIdea);
+}
+
+function appendIdeasToTarget(ideas, target) {
+  $(target).append(ideas);
+  return ideas;
+}
+```
+
+This looks like a lot, but it's mostly because I've broken it down into small pieces.
+
+We start with `IdeaRespository`, which has one method right now: `all`, which will fetch all of the ideas from the API and returns a promise.
+
+`renderIdea` takes an individual idea object and transforms it into a jQuery-wrapped DOM node.
+
+`renderIdeas` takes all of the individual ideas and maps over them using `renderIdea`. This will take our array of ideas and give us back an array of DOM nodes.
+
+Finally, we'll pass them to an anonymous function, which will then add them all to whatever target we want.
+
+There is something here that I would like to draw your attention to: whatever is returned from the first `then` method is passed to the next one. The anonymous function *is not* receiving the same thing that `renderIdeas` received. Since it is chained afterwards, it receiving the array that was *returned from* `renderIdeas`. Promises allow us to write a synchronous-like flow of functionality in an asynchronous world.
+
+If we run our test suite, it will pass now. Three cheers!
+
+That said, let's beef up our individual rendered ideas to be a little bit better. It's getting late and I'm getting tired, so let's bring in Lodash to help out with the formatting. Add the following to your `Gemfile` and `bundle`.
+
+```
+gem 'lodash-rails'
+```
+
+In our `application.js`, we'll want to include this in our assert pipeline.
+
+```js
+//= require lodash
+```
+
+Now, let's add a function that will render a template.
+
+```js
+var ideaTemplate = _.template(
+  '<div class="idea">' +
+    '<h2 class="idea-title"><%= title %></h2>' +
+    '<p class="idea-body"><%= body %></p>' +
+    '<p class="idea-quality"><%= quality %></p>' +
+    '<div class="idea-qualities idea-buttons">' +
+      '<button class="idea-promote">Promote</button>' +
+      '<button class="idea-demote">Demote</button>' +
+    '</div>' +
+    '<div class="idea-actions idea-buttons">' +
+      '<button class="idea-edit">Edit</button>' +
+      '<button class="idea-delete">Delete</button>' +
+    '</div>' +
+  '</div>'
+)
+
+function renderIdea(idea) {
+  return $(ideaTemplate(idea));
+}
+```
+

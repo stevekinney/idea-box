@@ -6,12 +6,14 @@ gem 'sass-rails', '~> 5.0'
 gem 'uglifier', '>= 1.3.0'
 gem 'jquery-rails'
 gem 'responders'
+gem 'lodash-rails'
 
 group :development, :test do
   gem 'pry-rails'
   gem 'capybara'
   gem 'launchy'
   gem 'simplecov'
+  gem 'poltergeist'
 end
 
 group :development do
