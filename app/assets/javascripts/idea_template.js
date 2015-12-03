@@ -1,5 +1,5 @@
 var ideaTemplate = _.template(
-  '<div class="idea">' +
+  '<div class="idea idea-<%= id %>">' +
     '<h2 class="idea-title"><%= title %></h2>' +
     '<p class="idea-body"><%= body %></p>' +
     '<p class="idea-quality"><%= quality %></p>' +

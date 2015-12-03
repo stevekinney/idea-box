@@ -14,16 +14,26 @@ function renderIdeas(ideas) {
 
 function renderIdea(idea) {
   idea.render = function () {
-    this.element = $(ideaTemplate(this));
-    return this;
+    idea.element = $(ideaTemplate(idea));
+    return idea;
   };
 
   idea.prependTo = function (target) {
-    this.element.prependTo(target);
-    return this;
+    idea.element.prependTo(target);
+    return idea;
   };
 
-  return idea.render();
+  idea.delete = deleteIdea;
+
+  idea.bindEvents = function () {
+    idea.element.find('.idea-delete').on('click', function () {
+      idea.delete();
+    });
+
+    return idea;
+  };
+
+  return idea.render().bindEvents();
 }
 
 function prependIdeaToContainer(idea) {

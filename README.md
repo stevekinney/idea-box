@@ -1327,3 +1327,132 @@ function createIdea(event) {
 ```
 
 If we run our tests, we'll see that it now passes. So, let's commit.
+
+### Deleting Ideas
+
+Let's start by generating another test file.
+
+```
+rails g integration_test deleting_ideas
+```
+
+Let's start with the most basic possible test. If we have `n` ideas and we delete one, we can expect to have `n - 1` ideas on the page.
+
+```rb
+require 'test_helper'
+
+class DeletingIdeasTest < ActionDispatch::IntegrationTest
+
+  def setup
+    use_javascript
+    visit root_path
+  end
+
+  def teardown
+    reset_driver
+  end
+
+  test "delete button removes an idea from the page" do
+    create_idea_by_filling_out_form
+
+    assert_difference "page.find_all('.idea').count", -1 do
+      page.find_all(".idea-delete").first.click
+
+      wait_for_ajax
+    end
+  end
+
+  private
+
+  def create_idea_by_filling_out_form
+    page.fill_in "idea[title]", with: "Gone Soon"
+    page.fill_in "idea[body]", with: "Bye"
+    page.click_button "Submit Idea"
+
+    wait_for_ajax
+  end
+
+end
+```
+
+This test will obviously fail because we haven't wired up any functionality to our delete button. There are a bunch of ways we could do this, but let's hook it up with the pattern that we've been using to render and prepend ideas.
+
+First, let's go ahead and create a new file for all of our idea actions. We'll call it `app/assets/javascripts/idea_actions.js`. In this file, we'll start with a simple function that sends out a DELETE request and then—if successful—will remove the element from the page.
+
+```js
+function deleteIdea() {
+  $.ajax({
+    method: 'DELETE',
+    url: '/api/v1/ideas/' + this.id
+  }).then(function () {
+    this.element.remove();
+  }.bind(this))
+}
+```
+
+If you recall, we need to use `bind()` in order to keep the context of `this` in an asynchronous function. You might be wondering what `this` even is at this point? Well, we're about to attach this method on to each idea that we render. Which means, `this` is whatever idea is calling the function. This is part of the power of allowing functions to execute based on their context.
+
+Inside of the `renderIdea` function in `app/assets/javascripts/render_ideas.js`, we'll attach it to our idea.
+
+```js
+idea.delete = deleteIdea;
+```
+
+Now, every idea has a `delete` method that will take care of notifying the server that it would like to be deleted and then politely removing itself from the page when that happens.
+
+We'll be binding events for promote and demote later on, so let's just add a method called `bindEvents` where we can do this all at once. Finally, we'll call that method, right after we render the element. The result of all of the changes to our `renderIdea` method is that it should look something like this.
+
+```js
+function renderIdea(idea) {
+  idea.render = function () {
+    idea.element = $(ideaTemplate(idea));
+    return idea;
+  };
+
+  idea.prependTo = function (target) {
+    idea.element.prependTo(target);
+    return idea;
+  };
+
+  idea.delete = deleteIdea;
+
+  idea.bindEvents = function () {
+    idea.element.find('.idea-delete').on('click', function () {
+      idea.delete();
+    });
+
+    return idea;
+  };
+
+  return idea.render().bindEvents();
+}
+```
+
+You'll notice that I have a habit of returning the idea object at the end of every method, this allows me to chain them together.
+
+If we run our tests, we'll see that everything passes and we now have a working delete button.
+
+#### Testing the Lack of an Unhappy Path
+
+It just so happens that our implementation will always be scoped to the correct idea via a powerful JavaScript feature called *closures*, which we'll discuss later. But let's write a test to verify that the correct idea was deleted, just because.
+
+```rb
+test "delete button removes the correct idea from the page" do
+  create_idea_by_filling_out_form
+
+  idea_div = page.find(".idea:first-child")
+  idea_title = idea_div.find(".idea-title").text
+
+  idea_div.find(".idea-delete").click
+
+  wait_for_ajax
+
+  refute page.has_content? idea_title
+end
+```
+
+Run the test suite and it should world as expected.
+
+### Promoting and Demoting Ideas
+
+
