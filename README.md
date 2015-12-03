@@ -12,7 +12,7 @@ In addition, I placed myself under some additional constraints that I wouldn't h
 - Event delegation
 - Advanced functional programming techniques
 
-My plan is to revisit this guide and add those features as we learn them throughout the module. We'll revist this application throughout the module. Feedback, suggestions, and pull requests are more than welcome.
+There is a lot I don't like in my implementation and we'll refactor it in future classes. My plan is to revisit this guide and add those features as we learn them throughout the module. We'll revist this application throughout the module. Feedback, suggestions, and pull requests are more than welcome.
 
 ## Getting Started
 
