@@ -659,30 +659,11 @@ Run the tests and we should have 24 passing tests. And with that our API is comp
 
 Because we have some solid tests on our API, we can be relatively confident about what we're going to get from Rails at any given moment.
 
-### The Basic Page
-
 We'll be doing most of our interactions with JavaScript, but we still want to send over a simple view that will load and run our client-side code. Let's start with an integration test to make sure we can load at a view at our application root and verify that it has the elements we're expecting.
 
-```
-rails g integration_test basic_template
-```
+### Generate a Static Page Controller
 
-This will generate a `test/integration/basic_template_test.rb` for us.
-
-```rb
-require 'test_helper'
-
-class BasicTemplateTest < ActionDispatch::IntegrationTest
-
-  test "it loads a page at the application root" do
-    get "/"
-    assert_response :success
-  end
-
-end
-```
-
-Run your tests using `rake` and watch your new test fail. `No route matches [GET] "/"` it will say and its right. We're not totally out of Rails country just yet. Let's generate a controller for our static template.
+Let's generate a controller for our static template.
 
 ```
 rails g controller static
@@ -711,8 +692,6 @@ Finally, we'll make a template for this action.
 touch app/views/static/main.html
 ```
 
-We'll run the test suite and swim enjoy its wonderfulness.
-
 ### Getting the Basic Structure Up and Running
 
 I know I'm going to want a few things on my page:
@@ -732,3 +711,58 @@ end
 ```
 
 Go ahead and `bundle`. I'll wait.
+
+#### Setting Up Capybara
+
+We need to add some stuff to `test/test_helper.rb` in order to get up and running. The first is that we need to require `capybara/rails`.
+
+```rb
+require 'capybara/rails'
+```
+
+The second is that we'll want to add all of its rodenty goodness to our integration tests.
+
+```rb
+class ActionDispatch::IntegrationTest
+  include Capybara::DSL
+  include Rails.application.routes.url_helpers
+end
+```
+
+Next, we'll generate a test.
+
+```
+rails g integration_test basic_template
+```
+
+This will generate a `test/integration/basic_template_test.rb` for us.
+
+```rb
+require 'test_helper'
+
+class BasicTemplateTest < ActionDispatch::IntegrationTest
+
+  test "it loads a page at the application root" do
+    visit root_path
+    assert_equal 200, page.status_code
+  end
+
+end
+```
+
+Run the test suite. Everything should pass. Getting the `<h1>` on the page should also be pretty straight-forward. We'll start with a test.
+
+```rb
+test "it has an <h1> tag with the content Idea Box" do
+  visit root_path
+  assert page.find("h1").has_content? "Idea Box"
+end
+```
+
+It will fail, but getting it pass is easy. Add the following content to `app/views/static/main.html`.
+
+```html
+<h1>Idea Box</h1>
+```
+
+Run the tests again and verify that they all still pass. Now is a good time for a commit.

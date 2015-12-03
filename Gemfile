@@ -11,6 +11,7 @@ group :development, :test do
   gem 'pry-rails'
   gem 'capybara'
   gem 'launchy'
+  gem 'simplecov'
 end
 
 group :development do
