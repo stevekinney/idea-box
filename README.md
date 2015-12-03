@@ -815,14 +815,14 @@ I won't subject you to implementing each HTML element one at a time. Here is the
 
   <section class="create-idea">
     <form class="new-idea">
-      <fieldset>
-        <label>Idea Title</label>
-        <input type="text" class="new-idea-title" placeholder="Idea Title">
-      </fieldset>
-      <fieldset>
-        <label>Idea Body</label>
-        <input type="text" class="new-idea-body" placeholder="Idea Body">
-      </fieldset>
+      <div class="new-idea-field">
+        <label class="new-idea-label">Idea Title</label>
+        <input type="text" class="new-idea-title new-idea-input" placeholder="Idea Title">
+      </div>
+      <div class="new-idea-field">
+        <label class="new-idea-label">Idea Body</label>
+        <input type="text" class="new-idea-body new-idea-input" placeholder="Idea Body">
+      </div>
       <input type="submit" class="new-idea-submit" value="Submit Idea">
     </form>
   </section>
@@ -831,3 +831,4 @@ I won't subject you to implementing each HTML element one at a time. Here is the
 
 </div>
 ```
+

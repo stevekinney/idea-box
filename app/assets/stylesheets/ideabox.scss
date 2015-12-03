@@ -1,0 +1,57 @@
+$form-color: rgb(255, 245, 213);
+$button-color: rgb(29, 178, 212);
+
+* {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+body, input {
+  font-family: 'Helvetica Neue', 'Helvetica', sans-serif;
+  font-weight: 300;
+}
+
+.container {
+  margin: auto;
+  max-width: 600px;
+}
+
+.new-idea {
+  background-color: $form-color;
+  border: 5px solid darken($form-color, 10);
+  padding: 1em;
+}
+
+.new-idea-field {
+  margin-bottom: 1em;
+}
+
+.new-idea-label {
+  display:block;
+  color: darken($form-color, 50);
+}
+
+.new-idea-input {
+  background-color: $form-color;
+  border-width: 0;
+  display: block;
+  font-size: 2em;
+  margin: 2px 0;
+  padding: 0;
+  width: 100%;
+}
+
+.new-idea-submit {
+  border: 0;
+  color: white;
+  background-color: $button-color;
+  font-size: 0.8em;
+  padding: 1em;
+  &:hover {
+    background-color: lighten($button-color, 10);
+  }
+  &:active {
+    background-color: darken($button-color, 10);
+  }
+}
