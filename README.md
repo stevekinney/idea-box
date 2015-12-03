@@ -766,3 +766,68 @@ It will fail, but getting it pass is easy. Add the following content to `app/vie
 ```
 
 Run the tests again and verify that they all still pass. Now is a good time for a commit.
+
+#### Adding the Form and Ideas Container
+
+If you recall from earlier, we had three major things we wanted on this page.
+
+- An `<h1>` with the name of the application.
+- A `<div>` with the class of `ideas` for rendering my ideas into.
+- A form for creating new ideas.
+
+We got the first one on the page. Let's write some tests for the second two.
+
+```rb
+test "it has an ideas container on the page" do
+  visit root_path
+  assert page.has_css? ".ideas"
+end
+
+test "it has a form for creating new ideas" do
+  visit root_path
+  assert page.has_css? "form.new-idea"
+end
+
+test "form has an text input for a new idea title" do
+  visit root_path
+  assert page.has_css? "form.new-idea input[type='text'].new-idea-title"
+end
+
+test "form has an text input for a new idea button" do
+  visit root_path
+  assert page.has_css? "form.new-idea input[type='text'].new-idea-body"
+end
+
+test "form has an input button" do
+  visit root_path
+  assert page.has_css? "form.new-idea input[type='submit'].new-idea-submit"
+end
+```
+
+I won't subject you to implementing each HTML element one at a time. Here is the basic HTML that I wrote to get the tests passing.
+
+```html
+<div class="container">
+
+  <header>
+    <h1>Idea Box</h1>
+  </header>
+
+  <section class="create-idea">
+    <form class="new-idea">
+      <fieldset>
+        <label>Idea Title</label>
+        <input type="text" class="new-idea-title" placeholder="Idea Title">
+      </fieldset>
+      <fieldset>
+        <label>Idea Body</label>
+        <input type="text" class="new-idea-body" placeholder="Idea Body">
+      </fieldset>
+      <input type="submit" class="new-idea-submit" value="Submit Idea">
+    </form>
+  </section>
+
+  <section class="ideas"></section>
+
+</div>
+```
