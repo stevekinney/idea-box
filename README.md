@@ -33,6 +33,7 @@
     - [Deleting Ideas](https://github.com/stevekinney/idea-box/blob/master/README.md#deleting-ideas)
         - [Testing the lack of an Unhappy Path](https://github.com/stevekinney/idea-box/blob/master/README.md#testing-the-lack-of-an-unhappy-path)
     - [Promoting and Demoting Ideas](https://github.com/stevekinney/idea-box/blob/master/README.md#promoting-and-demoting-ideas)
+- [Towards an Object Oriented Approach](https://github.com/stevekinney/idea-box/blob/master/README.md#towards-an-object-oriented-approach)
 
 # Idea Box
 
