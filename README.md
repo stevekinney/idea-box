@@ -574,6 +574,16 @@ Next, let's generate a migration.
 rails g migration ChangeIdeaQualityFromIntegerToString
 ```
 
+In the migration file you just generated, we'll add the following:
+
+```rb
+class ChangeIdeaQualityFromIntegerToString < ActiveRecord::Migration
+  def change
+    change_column :ideas, :quality, :string, default: "swill"
+  end
+end
+```
+
 We'll run the migration.
 
 ```
