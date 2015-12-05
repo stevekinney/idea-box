@@ -3,10 +3,7 @@ require 'test_helper'
 class DeletingIdeasTest < ActionDispatch::IntegrationTest
 
   def setup
-<<<<<<< Updated upstream
-=======
     create_idea
->>>>>>> Stashed changes
     use_javascript
     visit root_path
   end
