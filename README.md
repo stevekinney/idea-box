@@ -1,3 +1,39 @@
+#Index
+[IdeaBox](https://github.com/stevekinney/idea-box/blob/master/README.md#idea-box)
+- [Preamble](https://github.com/stevekinney/idea-box/blob/master/README.md#Preamble)
+- [Getting Started](https://github.com/stevekinney/idea-box/blob/master/README.md#getting-started)
+- [The Idea Model](https://github.com/stevekinney/idea-box/blob/master/README.md#the-idea-model)
+    - [Quality Control](https://github.com/stevekinney/idea-box/blob/master/README.md#quality-control)
+    - [Adding Validations](https://github.com/stevekinney/idea-box/blob/master/README.md#adding-validations)
+- [Setting Up Our Controller](https://github.com/stevekinney/idea-box/blob/master/README.md#setting-up-our–controller)
+- [Testing Our Controller Actions](https://github.com/stevekinney/idea-box/blob/master/README.md#testing-our-controller-actions)
+    - [Testing the Index Action](https://github.com/stevekinney/idea-box/blob/master/README.md#testing-the-index-action)
+    - [Drying Up Our Tests](https://github.com/stevekinney/idea-box/blob/master/README.md#drying-up-our-tests)
+    - [Testing the Contents of Our Response](https://github.com/stevekinney/idea-box/blob/master/README.md#testing-the-contents-of-our-response)
+    - [Getting a Specific Idea](https://github.com/stevekinney/idea-box/blob/master/README.md#getting-a-specific-idea)
+    - [Creating New Ideas](https://github.com/stevekinney/idea-box/blob/master/README.md#creating-new-ideas)
+    - [The Unhappier Side of Creating Ideas](https://github.com/stevekinney/idea-box/blob/master/README.md#the-unhappier-side-of-creating-ideas)
+    - [Updating Ideas](https://github.com/stevekinney/idea-box/blob/master/README.md#updating-ideas)
+    - [Changing the Quality of an Idea](https://github.com/stevekinney/idea-box/blob/master/README.md#changing-the-quality-of-an-idea)
+    - [The Unhappy Path and Enum Edge Cases](https://github.com/stevekinney/idea-box/blob/master/README.md#the-unhappy-path-and-enum-edge-cases)
+    - [The Rescue Mission](https://github.com/stevekinney/idea-box/blob/master/README.md#the-rescue-mission)
+    - [Deleting an Idea](https://github.com/stevekinney/idea-box/blob/master/README.md#deleting-an-idea)
+- [The Client Side](https://github.com/stevekinney/idea-box/blob/master/README.md#the-client-side)
+    - [Generate a Static Page Controller](https://github.com/stevekinney/idea-box/blob/master/README.md#generate-a-static-page-controller)
+    - [Getting the Basic Structure Up and Running](https://github.com/stevekinney/idea-box/blob/master/README.md#getting-the-basic-structure-up-and-running)
+        - [Setting up Capybara](https://github.com/stevekinney/idea-box/blob/master/README.md#setting-up-capybara)
+        - [Adding the Form and Ideas Container](https://github.com/stevekinney/idea-box/blob/master/README.md#adding-the-form-and-ideas-container)
+    - [Testing Some JavaScript with Capybara](https://github.com/stevekinney/idea-box/blob/master/README.md#testing-some-javaScript-with-capybara)
+- [Testing JavaScript](https://github.com/stevekinney/idea-box/blob/master/README.md#testing-javaScript)
+    - [Adding an Idea](https://github.com/stevekinney/idea-box/blob/master/README.md#adding-an-idea)
+        - [The hassles of Asynchronous Code and Multiple Threads](https://github.com/stevekinney/idea-box/blob/master/README.md#the-hassles-of-asynchronous-code-and-multiple-threads)
+        - [Testing the Unhappy Path](https://github.com/stevekinney/idea-box/blob/master/README.md#testing-the-unhappy-path)
+    - [Displaying Ideas](https://github.com/stevekinney/idea-box/blob/master/README.md#displaying-ideas)
+    - [Adding the Ideas We Create to the Page](https://github.com/stevekinney/idea-box/blob/master/README.md#adding-the-ideas-we-create-to-the-page)
+    - [Deleting Ideas](https://github.com/stevekinney/idea-box/blob/master/README.md#deleting-ideas)
+        - [Testing the lack of an Unhappy Path](https://github.com/stevekinney/idea-box/blob/master/README.md#testing-the-lack-of-an-unhappy-path)
+    - [Promoting and Demoting Ideas](https://github.com/stevekinney/idea-box/blob/master/README.md#promoting-and-demoting-ideas)
+
 # Idea Box
 
 ## Preamble
@@ -63,9 +99,9 @@ rails generate model idea title:string body:text quality:integer
 
 The next step is to migrate the database with `rake db:create db:migrate`. (Keep in mind, you might already have a database with the same name if you've done this project before. Forewarned is forearmed.)
 
-The specification says that, by default, all ideas start out at the lowest quality rating. Right now, `quality` is just an integer, so let's awesome that `0` represents the lowest possible quality.
+The specification says that, by default, all ideas start out at the lowest quality rating. Right now, `quality` is just an integer, so let's assume that `0` represents the lowest possible quality.
 
-Step one is to ourselves a nice little test in `test/models/idea_test.rb`. Let's replace the automatically generated—yet commented out—test with our own.
+Step one is to implement a nice little test in `test/models/idea_test.rb`. Let's replace the automatically generated—yet commented out—test with our own.
 
 ```rb
 test "should have a quality that defaults to 0" do
@@ -574,6 +610,16 @@ Next, let's generate a migration.
 rails g migration ChangeIdeaQualityFromIntegerToString
 ```
 
+In the migration file you just generated, we'll add the following:
+
+```rb
+class ChangeIdeaQualityFromIntegerToString < ActiveRecord::Migration
+  def change
+    change_column :ideas, :quality, :string, default: "swill"
+  end
+end
+```
+
 We'll run the migration.
 
 ```
@@ -655,7 +701,7 @@ Some ideas need to die. Let's write a test for deleting an idea.
 ```js
 test "#destroy removes an idea" do
   assert_difference 'Idea.count', -1 do
-    delete :destroy, idea: ideas(:one), format: :json
+    delete :destroy, id: ideas(:one), format: :json
   end
 end
 ```
