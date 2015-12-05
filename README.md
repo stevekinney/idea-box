@@ -655,7 +655,7 @@ Some ideas need to die. Let's write a test for deleting an idea.
 ```js
 test "#destroy removes an idea" do
   assert_difference 'Idea.count', -1 do
-    delete :destroy, idea: ideas(:one), format: :json
+    delete :destroy, id: ideas(:one), format: :json
   end
 end
 ```
