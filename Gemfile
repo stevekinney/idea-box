@@ -7,6 +7,7 @@ gem 'uglifier', '>= 1.3.0'
 gem 'jquery-rails'
 gem 'responders'
 gem 'lodash-rails'
+gem "active_model_serializers", github: "rails-api/active_model_serializers"
 
 group :development, :test do
   gem 'pry-rails'
