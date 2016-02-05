@@ -227,7 +227,7 @@ A whole bunch of files were created on our behalf. We won't use a lot of these a
 rm -r app/assets/javascripts/api app/assets/stylesheets/api
 ```
 
-So, now it's time to write a test to make sure that our API endpoint works (hint: it doesn't). We'll start by writing a test that we can hit it with JSON in `test/controllers/api/v1/ideas_controllers/test.rb`.
+So, now it's time to write a test to make sure that our API endpoint works (hint: it doesn't). We'll start by writing a test that we can hit it with JSON in `test/controllers/api/v1/ideas_controller_test.rb`.
 
 ```rb
 test "controller responds to json" do
