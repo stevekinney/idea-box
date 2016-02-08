@@ -498,7 +498,6 @@ So, what happens if we send some bad data to our server? We probably want to mak
 ```rb
 test "#create rejects ideas without a title" do
   idea = { body: 'Something' }
-  number_of_ideas = Idea.all.count
 
   post :create, idea: idea, format: :json
 
@@ -508,7 +507,6 @@ end
 
 test "#create rejects ideas without a body" do
   idea = { title: 'New Idea' }
-  number_of_ideas = Idea.all.count
 
   post :create, idea: idea, format: :json
 

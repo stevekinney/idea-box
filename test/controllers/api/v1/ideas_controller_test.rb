@@ -63,7 +63,6 @@ class Api::V1::IdeasControllerTest < ActionController::TestCase
 
   test "#create rejects ideas without a title" do
     idea = { body: 'Something' }
-    number_of_ideas = Idea.all.count
 
     post :create, idea: idea, format: :json
 
@@ -73,7 +72,6 @@ class Api::V1::IdeasControllerTest < ActionController::TestCase
 
   test "#create rejects ideas without a body" do
     idea = { title: 'New Idea' }
-    number_of_ideas = Idea.all.count
 
     post :create, idea: idea, format: :json
 
