@@ -961,11 +961,12 @@ In order to add an idea, we need to do the following:
 Let's write some functionality that handles the first three bullets a new file called `app/assets/javascripts/create_idea.js`.
 
 ```js
-var newIdeaTitle, newIdeaBody;
+var newIdeaTitle, newIdeaBody, errorMessages;
 
 $(document).ready(function () {
   newIdeaTitle = $('.new-idea-title');
   newIdeaBody = $('.new-idea-body');
+  errorMessages = $('.new-idea-messages');
 
   $('.new-idea-submit').on('click', createIdea);
 });
@@ -980,6 +981,10 @@ function getNewIdea() {
     title: newIdeaTitle.val(),
     body: newIdeaBody.val()
   };
+}
+
+function renderError() {
+  errorMessages.text('Title and/or body cannot be blank.');
 }
 ```
 
