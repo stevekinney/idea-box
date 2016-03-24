@@ -1649,7 +1649,7 @@ idea.toJSON = function () {
 };
 ```
 
-I'm also nesting it in an object with the key of ideas, that way Rails gets it as `params[:ideas]`.
+I'm also nesting it in an object with the key of idea, that way Rails gets it as `params[:idea]`.
 
 I can also implement an `updateIdea` that will prepare an AJAX request with whatever the current state of the object is in `app/assets/javascripts/idea_actions.js`.
 
@@ -1690,7 +1690,7 @@ idea.update = updateIdea;
 
 (You might be wondering if there is a better way to do this. There is. Next week we'll talk about how to attach these to the prototype chain. In that scenario, each idea would just call up to an object that had all of these methods ready and waiting.)
 
-Trying to be a DOM surgeon and just change little pieces of the DOM based on changes to you model is hard and tedious. It often involves a whole lot of traversal and other things that are more work thant their worth. We'll implement a `rerender` method that will do the following:
+Trying to be a DOM surgeon and just change little pieces of the DOM based on changes to you model is hard and tedious. It often involves a whole lot of traversal and other things that are more work than their worth. We'll implement a `rerender` method that will do the following:
 
 1. Call jQuery's `replaceWith` method.
 2. Pass in a new version of the template based on the updated quality.
@@ -1724,7 +1724,7 @@ idea.bindEvents = function () {
 };
 ```
 
-Our tests should now pass. Just in case they don't, here is there current contents of `renderIdea` and `app/assets/javascripts/idea_actions.js`.
+Our tests should now pass. Just in case they don't, here is the current contents of `renderIdea` and `app/assets/javascripts/idea_actions.js`.
 
 ```js
 function renderIdea(idea) {
@@ -1807,14 +1807,14 @@ function updateIdea() {
 
 ## Towards an Object Oriented Approach
 
-So, we have this mess of functions all of the place that we're trying to attach onto an individual idea object. It's kind of sloppy, messy, and difficult because we're trying to manage two things:
+So, we have this mess of functions all over the place that we're trying to attach onto an individual idea object. It's kind of sloppy, messy, and difficult because we're trying to manage two things:
 
 - Individual ideas and their state
 - Methods that work on that state
 
 The Rubyist in you should be througholy annoyned at this point. What we're doing right now seems hacky because it is. It would be much nicer if every idea could just refer to another object that stored all of the shared methods that each idea might need. This sounds like a job for protoypal inheritance.
 
-What would an object-oriented approach look like? Ideally could construct an object that held the data for an individual idea and then store all of the methods a single prototype object. Here is an example of what this might look like.
+What would an object-oriented approach look like? Ideally we could construct an object that held the data for an individual idea and then store all of the methods in a single prototype object. Here is an example of what this might look like.
 
 ```js
 function Idea(data) {
