@@ -389,7 +389,7 @@ Notice that I used `Idea.count` instead of 2. You and I both know there are two 
 
 We also want to make sure that we have well-formed ideas in our response. The order of our fixtures is not guaranteed and it's frankly not worth pinning down all of the small changes that occur between converting our ActiveRecord model into a simpler data structure (a hash), serializing it into a string, sending it out over the wire, and converting it back into a data structure. But, it is super important that each of the ideas we get from our API have a `title`, `body`, and `quality` property.
 
-Let's go ahead and test that we have this properties:
+Let's go ahead and test that we have these properties:
 
 ```rb
 test '#index contains ideas with the correct properties' do
@@ -591,9 +591,9 @@ test "#update rejects invalid quality values" do
 end
 ```
 
-Oh boy or girl! Controller raises an `ArgumentError` and blows up. Enum properties get very angry when you assign an invalid attribute. Passing in a valid attribute is considered a application level error in Rails. So, it's on us to figure out a way to refactor this controller to get this test to pass.
+Oh boy or girl! Controller raises an `ArgumentError` and blows up. Enum properties get very angry when you assign an invalid attribute. Passing in a valid attribute is considered an application level error in Rails. So, it's on us to figure out a way to refactor this controller to get this test to pass.
 
-**Full Disclosure**: Your author now wishes he didn't use enums. If we had chosen to just use a string field with a default value, we could roughly the same interface. If we want to make an invalid enum not blow up, we're going to have to hack together a lot of logic in our controller. One of the things I'd love for you all to get out of Module 4 is to listen to that little voice in your head about not going down a bad path. That voice is ringing loud and clear in my head. So, I'm going to listen to it.
+**Full Disclosure**: Your author now wishes he didn't use enums. If we had chosen to just use a string field with a default value, we could have roughly the same interface. If we want to make an invalid enum not blow up, we're going to have to hack together a lot of logic in our controller. One of the things I'd love for you all to get out of Module 4 is to listen to that little voice in your head about not going down a bad path. That voice is ringing loud and clear in my head. So, I'm going to listen to it.
 
 Let's stop what we're doing and make a commit.
 
@@ -1026,7 +1026,7 @@ There are two reasons why this test will never pass. First, is that we're firing
 
 We'll have to implement two little features in order to get everything moving along.
 
-1. Our test suite is not goin to wait for the AJAX to complete before testing if our new idea is in the database.
+1. Our test suite is not going to wait for the AJAX to complete before testing if our new idea is in the database.
 2. Our Poltergeist instance is running on a different thread from our database test. The Rails default of using transactions isn't going to work. So, we'll have switch strategies and use `DatabaseCleaner` to help us out.
 
 The first one is fairly straight-forward. We'll need to implement a method that checks with jQuery to see if we have any active AJAX requests and if so, kicks the can down the road and waits a little bit before checking again. To do this, we'll add an addition pair of methods to `ActionDispatch::IntegrationTest` in `test/test_helper.rb`.
@@ -1049,7 +1049,7 @@ end
 
 We'll now have access to `wait_for_ajax` in all of our integration tests.
 
-We'll also need to add `database_clearner` to our `Gemfile` and `bundle`. Then we can add the following methods to `ActionDispatch::IntegrationTest` as well.
+We'll also need to add `database_cleaner` to our `Gemfile` and `bundle`. Then we can add the following methods to `ActionDispatch::IntegrationTest` as well.
 
 ```rb
 class ActionDispatch::IntegrationTest
@@ -1072,7 +1072,7 @@ class ActionDispatch::IntegrationTest
   end
 
   def reset_driver
-    # Capybara.current_driver = nil
+    Capybara.current_driver = nil
   end
 
   def wait_for_ajax
@@ -1168,9 +1168,13 @@ function createIdea(event) {
   IdeaRepository.create(getNewIdea())
                 .fail(renderError);
 }
+
+function renderError() {
+  errorMessages.text('Title and/or body cannot be blank.');
+}
 ```
 
-As we discussed before. This isn't perfect. It will technically display this message even if the request times out, but its a good first pass and we would come back later and add test coverage and implementation for all of the nuances. We probably also want to clear out the error when we go to submit it again.
+As we discussed before, this isn't perfect. It will technically display this message even if the request times out, but its a good first pass and we would come back later and add test coverage and implementation for all of the nuances. We probably also want to clear out the error when we go to submit it again.
 
 ```rb
 test "it removes the error on subsequent submissions" do
@@ -1205,7 +1209,7 @@ The tests should pass.
 
 ### Displaying Ideas
 
-We know that at some point, we're going to need to render a template for each idea. So, let's get hat out of the way now. We'll Lodash's `_.template` function to help us out here. We will need to install Lodash first, however.
+We know that at some point, we're going to need to render a template for each idea. So, let's get that out of the way now. We'll use Lodash's `_.template` function to help us out here. We will need to install Lodash first, however.
 
 - Add the `lodash-rails` gem to your `Gemfile`
 - `bundle`
@@ -1273,9 +1277,7 @@ function renderIdea(idea) {
     this.element.prependTo(target);
     return this;
   };
-  def create_idea
-    Idea.create(title: "Gone Soon", body: "Bye")
-  end
+
   return idea.render();
 }
 ```
@@ -1382,10 +1384,10 @@ end
 
 We're expecting one more on the page. Let's run it and watch it fail.
 
-Getting this test to pass it pretty easy. We basically need to do two things:
+Getting this test to pass is pretty easy. We basically need to do two things:
 
 - Take the JavaScript object we get back from the API and pass it into `renderIdea`.
-- Take the resulting object and pass prepend it to the list of ideas.
+- Take the resulting object and prepend it to the list of ideas.
 
 For listing our ideas on page load, we made the process of giving an idea its super powers part of `IdeaRepository`. So, let's update that to render our new idea after it loads in `app/assets/javascripts/idea_repository.rb`.
 
@@ -1432,12 +1434,14 @@ require 'test_helper'
 class DeletingIdeasTest < ActionDispatch::IntegrationTest
 
   def setup
+    super
     create_idea
     use_javascript
     visit root_path
   end
 
   def teardown
+    super
     reset_driver
   end
 
@@ -1896,4 +1900,3 @@ function renderIdea(idea) {
   return new Idea(idea);
 }
 ```
-
