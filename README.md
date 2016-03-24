@@ -1540,7 +1540,7 @@ Run the test suite and it should world as expected.
 
 ### Promoting and Demoting Ideas
 
-The last feature that we're going to implement in this tutorial is the ability to promote and demote the quality of a given idea. Since the `update` action in our controller is relatively simple, this will also serve as a template for how to impletement an update feature as well for the title and body of an idea.
+The last feature that we're going to implement in this tutorial is the ability to promote and demote the quality of a given idea. Since the `update` action in our controller is relatively simple, this will also serve as a template for how to implement an update feature as well for the title and body of an idea.
 
 We'll generate another test file in `test/integration/update_idea.rb`
 
@@ -1552,12 +1552,14 @@ require 'test_helper'
 class UpdateIdeasTest < ActionDispatch::IntegrationTest
 
   def setup
+    super
     create_idea
     use_javascript
     visit root_path
   end
 
   def teardown
+    super
     reset_driver
   end
 
