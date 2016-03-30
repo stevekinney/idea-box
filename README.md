@@ -498,7 +498,6 @@ So, what happens if we send some bad data to our server? We probably want to mak
 ```rb
 test "#create rejects ideas without a title" do
   idea = { body: 'Something' }
-  number_of_ideas = Idea.all.count
 
   post :create, idea: idea, format: :json
 
@@ -508,7 +507,6 @@ end
 
 test "#create rejects ideas without a body" do
   idea = { title: 'New Idea' }
-  number_of_ideas = Idea.all.count
 
   post :create, idea: idea, format: :json
 
@@ -963,11 +961,12 @@ In order to add an idea, we need to do the following:
 Let's write some functionality that handles the first three bullets a new file called `app/assets/javascripts/create_idea.js`.
 
 ```js
-var newIdeaTitle, newIdeaBody;
+var newIdeaTitle, newIdeaBody, errorMessages;
 
 $(document).ready(function () {
   newIdeaTitle = $('.new-idea-title');
   newIdeaBody = $('.new-idea-body');
+  errorMessages = $('.new-idea-messages');
 
   $('.new-idea-submit').on('click', createIdea);
 });
@@ -982,6 +981,10 @@ function getNewIdea() {
     title: newIdeaTitle.val(),
     body: newIdeaBody.val()
   };
+}
+
+function renderError() {
+  errorMessages.text('Title and/or body cannot be blank.');
 }
 ```
 
