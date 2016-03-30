@@ -410,7 +410,7 @@ It's about time for another commit, I think.
 Okay, we can get all of the ideas, but what about getting just one idea in particular? Let's start with a test that verifies that we even have that endpoint.
 
 ```rb
-test "controller responds to json" do
+test "show action responds to json" do
   id = ideas(:one).id
 
   get :show, id: id, format: :json
